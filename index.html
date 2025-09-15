@@ -6,6 +6,9 @@
     <title>Cronômetro de Tarefas para Notion</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Bibliotecas para Exportar PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -56,14 +59,17 @@
 
                 <div class="text-left">
                     <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Seu histórico de tarefas e tempo utilizado</h3>
-                    <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
+                    <div id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
                         <!-- Itens do histórico serão inseridos aqui -->
-                    </ul>
+                    </div>
                 </div>
             </div>
             <div class="flex justify-between items-center mt-4">
                  <p id="user-info" class="text-sm text-gray-500"></p>
-                 <button id="logout-btn" class="text-sm text-blue-600 hover:underline">Sair</button>
+                 <div>
+                    <button id="export-pdf-btn" class="text-sm text-blue-600 hover:underline mr-4">Exportar PDF</button>
+                    <button id="logout-btn" class="text-sm text-blue-600 hover:underline">Sair</button>
+                 </div>
             </div>
         </div>
 
@@ -99,7 +105,6 @@
           measurementId: "G-8CQ3VSSXNF"
         };
 
-
         // Inicialização do Firebase
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -113,6 +118,7 @@
         const loginBtn = document.getElementById('login-btn');
         const registerBtn = document.getElementById('register-btn');
         const logoutBtn = document.getElementById('logout-btn');
+        const exportPdfBtn = document.getElementById('export-pdf-btn');
         const authError = document.getElementById('auth-error');
         const userInfo = document.getElementById('user-info');
 
@@ -125,10 +131,11 @@
         const stopBtn = document.getElementById('stop-btn');
         const historyList = document.getElementById('history-list');
 
-        // Variáveis de estado do cronômetro
+        // Variáveis de estado
         let timerInterval = null;
         let totalSeconds = 0;
         let unsubscribeFromHistory = null;
+        let allUserEntries = []; // Armazena todas as entradas para exportação
 
         // --- LÓGICA DE AUTENTICAÇÃO ---
 
@@ -137,15 +144,13 @@
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 userInfo.textContent = `Logado como: ${user.email}`;
-                
-                // Carrega todo o histórico do usuário ao fazer login
                 loadHistory();
-                
             } else {
                 mainApp.classList.add('hidden');
                 authScreen.classList.remove('hidden');
                 userInfo.textContent = '';
                 if(unsubscribeFromHistory) unsubscribeFromHistory();
+                allUserEntries = [];
             }
         });
 
@@ -180,6 +185,41 @@
             } catch (error) {
                  console.error("Erro ao sair: ", error);
             }
+        });
+
+        exportPdfBtn.addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (!user || allUserEntries.length === 0) {
+                alert('Não há dados para exportar.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('Relatório de Atividades', 14, 22);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Usuário: ${user.email}`, 14, 30);
+            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 36);
+
+            const tableData = allUserEntries.map(entry => {
+                const date = entry.createdAt.toDate().toLocaleString('pt-BR');
+                const { mins, secs } = formatTime(entry.timeSpent);
+                const time = `${mins}m ${secs}s`;
+                return [entry.taskName, date, time];
+            });
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Tarefa', 'Data de Conclusão', 'Tempo Gasto']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [39, 174, 96] } // Verde mais escuro
+            });
+
+            doc.save(`relatorio_${user.email}_${new Date().toISOString().slice(0,10)}.pdf`);
         });
 
         // --- LÓGICA DO CRONÔMETRO ---
@@ -249,15 +289,11 @@
             resetTimer();
         });
 
-
-        // --- LÓGICA DO FIRESTORE (COM DADOS PRIVADOS) ---
+        // --- LÓGICA DO FIRESTORE ---
 
         async function saveTimeEntry() {
             const user = auth.currentUser;
-            if (!user) {
-                console.error("Usuário não autenticado.");
-                return;
-            }
+            if (!user) { console.error("Usuário não autenticado."); return; }
             if (totalSeconds === 0) return;
 
             const taskName = taskNameInput.value.trim();
@@ -281,10 +317,8 @@
         }
 
         function loadHistory() {
-            if (unsubscribeFromHistory) {
-                unsubscribeFromHistory();
-            }
-
+            if (unsubscribeFromHistory) unsubscribeFromHistory();
+            
             const user = auth.currentUser;
             if (!user) return;
 
@@ -292,49 +326,71 @@
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
-
             const q = query(collection(db, collectionPath));
 
             unsubscribeFromHistory = onSnapshot(q, (querySnapshot) => {
-                historyList.innerHTML = '';
                 if (querySnapshot.empty) {
                     historyList.innerHTML = '<p class="text-gray-400">Você ainda não registou nenhuma atividade.</p>';
+                    allUserEntries = [];
                     return;
                 }
                 
                 const entries = [];
-                querySnapshot.forEach(doc => {
-                    entries.push(doc.data());
-                });
-
+                querySnapshot.forEach(doc => entries.push(doc.data()));
                 entries.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
+                allUserEntries = entries;
 
-                entries.forEach(entryData => {
-                    const { mins, secs } = formatTime(entryData.timeSpent);
-                    const li = document.createElement('li');
-                    li.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                const groupedEntries = {};
+                entries.forEach(entry => {
+                    const date = entry.createdAt.toDate();
+                    const key = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`;
+                    if (!groupedEntries[key]) groupedEntries[key] = [];
+                    groupedEntries[key].push(entry);
+                });
+                
+                historyList.innerHTML = '';
+                const sortedMonths = Object.keys(groupedEntries).sort().reverse();
+
+                sortedMonths.forEach(monthKey => {
+                    const [year, month] = monthKey.split('-');
+                    const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
                     
-                    const taskInfoDiv = document.createElement('div');
-                    taskInfoDiv.className = 'flex-grow text-left';
+                    const monthHeader = document.createElement('h4');
+                    monthHeader.className = 'font-bold text-gray-600 mt-4 mb-2 text-sm capitalize';
+                    monthHeader.textContent = monthName;
+                    historyList.appendChild(monthHeader);
 
-                    const taskNameP = document.createElement('p');
-                    taskNameP.className = 'font-semibold text-gray-800';
-                    taskNameP.textContent = entryData.taskName;
+                    const monthList = document.createElement('ul');
+                    monthList.className = 'space-y-2';
 
-                    const dateInfo = document.createElement('p');
-                    dateInfo.className = 'text-xs text-gray-500';
-                    dateInfo.textContent = entryData.createdAt.toDate().toLocaleString('pt-BR');
-                    
-                    taskInfoDiv.appendChild(taskNameP);
-                    taskInfoDiv.appendChild(dateInfo);
+                    groupedEntries[monthKey].forEach(entryData => {
+                        const { mins, secs } = formatTime(entryData.timeSpent);
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                        
+                        const taskInfoDiv = document.createElement('div');
+                        taskInfoDiv.className = 'flex-grow text-left';
 
-                    const timeInfo = document.createElement('span');
-                    timeInfo.className = 'font-semibold text-gray-800 text-lg ml-4';
-                    timeInfo.textContent = `${mins}m ${secs}s`;
-                    
-                    li.appendChild(taskInfoDiv);
-                    li.appendChild(timeInfo);
-                    historyList.appendChild(li);
+                        const taskNameP = document.createElement('p');
+                        taskNameP.className = 'font-semibold text-gray-800';
+                        taskNameP.textContent = entryData.taskName;
+
+                        const dateInfo = document.createElement('p');
+                        dateInfo.className = 'text-xs text-gray-500';
+                        dateInfo.textContent = entryData.createdAt.toDate().toLocaleString('pt-BR');
+                        
+                        taskInfoDiv.appendChild(taskNameP);
+                        taskInfoDiv.appendChild(dateInfo);
+
+                        const timeInfo = document.createElement('span');
+                        timeInfo.className = 'font-semibold text-gray-800 text-lg ml-4';
+                        timeInfo.textContent = `${mins}m ${secs}s`;
+                        
+                        li.appendChild(taskInfoDiv);
+                        li.appendChild(timeInfo);
+                        monthList.appendChild(li);
+                    });
+                    historyList.appendChild(monthList);
                 });
             }, (error) => {
                 console.error("Erro ao carregar histórico:", error);
@@ -344,5 +400,4 @@
     </script>
 </body>
 </html>
-
 
