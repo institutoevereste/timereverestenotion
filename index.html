@@ -141,6 +141,7 @@
         let pauseStartTime = null;
         let pauses = [];
         let isTimerRunning = false;
+        let sessionStartTime = null;
 
         // --- LÓGICA DE AUTENTICAÇÃO E ESTADO ---
 
@@ -150,7 +151,7 @@
                 mainApp.classList.remove('hidden');
                 userInfo.textContent = `Logado como: ${user.email}`;
                 loadHistory();
-                restoreTimerState(); // Tenta restaurar uma sessão ativa
+                restoreTimerState();
             } else {
                 mainApp.classList.add('hidden');
                 authScreen.classList.remove('hidden');
@@ -163,15 +164,87 @@
         
         window.addEventListener('beforeunload', () => {
             if(isTimerRunning) {
-                saveTimerState(false); // Salva o estado sem limpar o intervalo
+                saveTimerState(false);
             }
         });
 
-        // Funções de Autenticação (sem alterações)
-        registerBtn.addEventListener('click', async () => { /* ... */ });
-        loginBtn.addEventListener('click', async () => { /* ... */ });
-        logoutBtn.addEventListener('click', async () => { /* ... */ });
-        exportPdfBtn.addEventListener('click', () => { /* ... */ });
+        // Funções de Autenticação
+        registerBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.textContent = '';
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = "Erro ao registar: " + error.message;
+            }
+        });
+
+        loginBtn.addEventListener('click', async () => {
+            const email = emailInput.value;
+            const password = passwordInput.value;
+            authError.textContent = '';
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                authError.textContent = "Erro ao entrar: " + error.message;
+            }
+        });
+
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                if(isTimerRunning) {
+                    await saveTimerState();
+                }
+                await signOut(auth);
+            } catch (error) {
+                 console.error("Erro ao sair: ", error);
+            }
+        });
+
+        exportPdfBtn.addEventListener('click', () => {
+            const user = auth.currentUser;
+            if (!user || allUserEntries.length === 0) {
+                alert('Não há dados para exportar.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('Relatório de Atividades', 14, 22);
+            doc.setFontSize(11);
+            doc.setTextColor(100);
+            doc.text(`Usuário: ${user.email}`, 14, 30);
+            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 36);
+
+            const tableData = allUserEntries.map(entry => {
+                const date = (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleDateString('pt-BR');
+                const startTime = entry.startTime?.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) || 'N/A';
+                const endTime = (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                
+                const { mins, secs } = formatTime(entry.timeSpent);
+                const activeTime = `${mins}m ${secs}s`;
+                
+                const totalPauseTime = entry.totalPauseTime || 0;
+                const { mins: pauseMins, secs: pauseSecs } = formatTime(totalPauseTime);
+                const pauseTimeStr = `${pauseMins}m ${pauseSecs}s`;
+                const pauseCount = entry.pauseCount || 0;
+
+                return [entry.taskName, date, startTime, endTime, activeTime, pauseCount, pauseTimeStr];
+            });
+
+            doc.autoTable({
+                startY: 50,
+                head: [['Tarefa', 'Data', 'Início', 'Fim', 'Tempo Ativo', 'Nº Pausas', 'Tempo Pausado']],
+                body: tableData,
+                theme: 'striped',
+                headStyles: { fillColor: [39, 174, 96] }
+            });
+
+            doc.save(`relatorio_${user.email}_${new Date().toISOString().slice(0,10)}.pdf`);
+        });
         
         // --- FUNÇÕES DE PERSISTÊNCIA DE SESSÃO ---
 
@@ -192,9 +265,10 @@
                 taskName: taskNameInput.value.trim(),
                 totalSeconds: totalSeconds,
                 pauses: pauses,
-                isPaused: !timerInterval, // Se não há intervalo, está pausado
+                isPaused: !timerInterval,
                 lastSavedAt: new Date(),
                 pauseStartTime: pauseStartTime,
+                sessionStartTime: sessionStartTime,
             });
         }
         
@@ -213,9 +287,9 @@
                 totalSeconds = data.totalSeconds;
                 pauses = data.pauses || [];
                 pauseStartTime = data.pauseStartTime;
+                sessionStartTime = data.sessionStartTime?.toDate();
                 
                 if (!data.isPaused) {
-                    // Se não estava pausado, calcula o tempo que passou desde o último save
                     const elapsed = Math.floor((new Date() - data.lastSavedAt.toDate()) / 1000);
                     totalSeconds += elapsed;
                     startTimer();
@@ -270,6 +344,7 @@
             pauses = [];
             pauseStartTime = null;
             isTimerRunning = false;
+            sessionStartTime = null;
             updateDisplay();
             startBtn.classList.remove('hidden');
             pauseBtn.classList.add('hidden');
@@ -285,6 +360,7 @@
                 return;
             }
             taskNameInput.disabled = true;
+            sessionStartTime = new Date();
             startTimer();
             saveTimerState(false);
             startBtn.classList.add('hidden');
@@ -314,7 +390,7 @@
         });
 
         stopBtn.addEventListener('click', async () => {
-            pauseTimer(); // Garante que para antes de salvar
+            pauseTimer();
             await saveTimeEntry();
             await clearActiveTimer();
             resetTimer();
@@ -338,6 +414,8 @@
                 await addDoc(collection(db, collectionPath), {
                     taskName: taskName,
                     timeSpent: timeSpent,
+                    startTime: sessionStartTime,
+                    endTime: new Date(),
                     createdAt: new Date(),
                     userId: user.uid,
                     userEmail: user.email,
@@ -359,6 +437,7 @@
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
             const q = query(collection(db, collectionPath));
+            
             unsubscribeFromHistory = onSnapshot(q, (querySnapshot) => {
                  if (querySnapshot.empty) {
                     historyList.innerHTML = '<p class="text-gray-400">Você ainda não registou nenhuma atividade.</p>';
@@ -369,6 +448,7 @@
                 querySnapshot.forEach(doc => entries.push(doc.data()));
                 entries.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
                 allUserEntries = entries;
+
                 const groupedEntries = {};
                 entries.forEach(entry => {
                     const date = entry.createdAt.toDate();
@@ -376,113 +456,74 @@
                     if (!groupedEntries[key]) groupedEntries[key] = [];
                     groupedEntries[key].push(entry);
                 });
+                
                 historyList.innerHTML = '';
                 const sortedMonths = Object.keys(groupedEntries).sort().reverse();
+
                 sortedMonths.forEach(monthKey => {
-                    /* ... (Lógica de exibição do histórico sem alterações) ... */
+                    const [year, month] = monthKey.split('-');
+                    const monthName = new Date(year, month - 1, 1).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+                    
+                    const monthHeader = document.createElement('h4');
+                    monthHeader.className = 'font-bold text-gray-600 mt-4 mb-2 text-sm capitalize';
+                    monthHeader.textContent = monthName;
+                    historyList.appendChild(monthHeader);
+
+                    const monthList = document.createElement('ul');
+                    monthList.className = 'space-y-2';
+
+                    groupedEntries[monthKey].forEach(entryData => {
+                        const { mins, secs } = formatTime(entryData.timeSpent);
+                        const li = document.createElement('li');
+                        li.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
+                        
+                        const taskInfoDiv = document.createElement('div');
+                        taskInfoDiv.className = 'flex-grow text-left';
+
+                        const taskNameP = document.createElement('p');
+                        taskNameP.className = 'font-semibold text-gray-800';
+                        taskNameP.textContent = entryData.taskName;
+                        taskInfoDiv.appendChild(taskNameP);
+                        
+                        const pauseCount = entryData.pauseCount || 0;
+                        if (pauseCount > 0) {
+                            const totalPauseTime = entryData.totalPauseTime || 0;
+                            const { mins: pauseMins, secs: pauseSecs } = formatTime(totalPauseTime);
+                            const pauseInfoP = document.createElement('p');
+                            pauseInfoP.className = 'text-xs text-gray-500';
+                            pauseInfoP.textContent = `Pausas: ${pauseCount} (Total: ${pauseMins}m ${pauseSecs}s)`;
+                            taskInfoDiv.appendChild(pauseInfoP);
+                        }
+
+                        const dateInfo = document.createElement('p');
+                        dateInfo.className = 'text-xs text-gray-500 mt-1';
+                        
+                        // Lógica para mostrar as datas de forma segura
+                        const finalDate = entryData.endTime?.toDate() || entryData.createdAt.toDate();
+                        if (entryData.startTime && entryData.endTime) {
+                            const startTimeStr = entryData.startTime.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                            const endTimeStr = finalDate.toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+                            dateInfo.textContent = `${finalDate.toLocaleDateString('pt-BR')} ・ ${startTimeStr} - ${endTimeStr}`;
+                        } else {
+                            dateInfo.textContent = finalDate.toLocaleString('pt-BR');
+                        }
+                        taskInfoDiv.appendChild(dateInfo);
+
+                        const timeInfo = document.createElement('span');
+                        timeInfo.className = 'font-semibold text-gray-800 text-lg ml-4';
+                        timeInfo.textContent = `${mins}m ${secs}s`;
+                        
+                        li.appendChild(taskInfoDiv);
+                        li.appendChild(timeInfo);
+                        monthList.appendChild(li);
+                    });
+                    historyList.appendChild(monthList);
                 });
             }, (error) => {
                 console.error("Erro ao carregar histórico:", error);
                 historyList.innerHTML = '<p class="text-red-500">Erro ao carregar o histórico.</p>';
             });
         }
-        
-        // --- Código sem alterações ---
-        // As funções de Auth, exportação de PDF e exibição do histórico permanecem as mesmas
-        // Adicionando o código omitido para completude
-        registerBtn.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            authError.textContent = '';
-            try {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = "Erro ao registar: " + error.message;
-            }
-        });
-
-        loginBtn.addEventListener('click', async () => {
-            const email = emailInput.value;
-            const password = passwordInput.value;
-            authError.textContent = '';
-            try {
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                authError.textContent = "Erro ao entrar: " + error.message;
-            }
-        });
-
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                if(isTimerRunning) {
-                    await saveTimerState(); // Garante que salva o estado antes de sair
-                }
-                await signOut(auth);
-            } catch (error) {
-                 console.error("Erro ao sair: ", error);
-            }
-        });
-
-        exportPdfBtn.addEventListener('click', () => {
-            const user = auth.currentUser;
-            if (!user || allUserEntries.length === 0) {
-                alert('Não há dados para exportar.');
-                return;
-            }
-
-            const { jsPDF } = window.jspdf;
-            const doc = new jsPDF();
-
-            doc.setFontSize(18);
-            doc.text('Relatório de Atividades', 14, 22);
-            doc.setFontSize(11);
-            doc.setTextColor(100);
-            doc.text(`Usuário: ${user.email}`, 14, 30);
-            doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 36);
-
-            const tableData = allUserEntries.map(entry => {
-                const date = entry.createdAt.toDate().toLocaleString('pt-BR');
-                const { mins, secs } = formatTime(entry.timeSpent);
-                const activeTime = `${mins}m ${secs}s`;
-                
-                const totalPauseTime = entry.totalPauseTime || 0;
-                const { mins: pauseMins, secs: pauseSecs } = formatTime(totalPauseTime);
-                const pauseTimeStr = `${pauseMins}m ${pauseSecs}s`;
-                const pauseCount = entry.pauseCount || 0;
-
-                return [entry.taskName, date, activeTime, pauseCount, pauseTimeStr];
-            });
-
-            doc.autoTable({
-                startY: 50,
-                head: [['Tarefa', 'Data', 'Tempo Ativo', 'Nº Pausas', 'Tempo Pausado']],
-                body: tableData,
-                theme: 'striped',
-                headStyles: { fillColor: [39, 174, 96] }
-            });
-
-            doc.save(`relatorio_${user.email}_${new Date().toISOString().slice(0,10)}.pdf`);
-        });
-
-        const originalLoadHistory = onSnapshot;
-        onSnapshot = (...args) => {
-            const unsubscribe = originalLoadHistory(...args);
-            const [query, callback, onError] = args;
-            
-            getDocs(query).then(callback).catch(onError);
-
-            return unsubscribe;
-        }
-
-        function getDocs(query) {
-             return new Promise((resolve, reject) => {
-                const unsubscribe = originalLoadHistory(query, (snapshot) => {
-                    resolve(snapshot);
-                    unsubscribe();
-                }, reject);
-            });
-        }
-        
     </script>
 </body>
 </html>
