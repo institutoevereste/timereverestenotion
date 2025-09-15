@@ -40,7 +40,7 @@
         <div id="main-app" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8 text-center">
                 <div class="mb-6">
-                    <input type="text" id="task-name" placeholder="Digite o nome da tarefa para ver seu histórico" class="w-full text-center text-lg px-4 py-3 border-b-2 border-gray-200 focus:outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" id="task-name" placeholder="Qual tarefa vai cronometrar agora?" class="w-full text-center text-lg px-4 py-3 border-b-2 border-gray-200 focus:outline-none focus:border-blue-500 transition-colors">
                 </div>
 
                 <div class="timer-display text-7xl font-bold text-gray-800 mb-6">
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="text-left">
-                    <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Seu Histórico de Tempo na Tarefa</h3>
+                    <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Seu Histórico Completo de Atividades</h3>
                     <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
                         <!-- Itens do histórico serão inseridos aqui -->
                     </ul>
@@ -137,9 +137,10 @@
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 userInfo.textContent = `Logado como: ${user.email}`;
-                if (taskNameInput.value) {
-                    loadHistory(taskNameInput.value);
-                }
+                
+                // Carrega todo o histórico do usuário ao fazer login
+                loadHistory();
+                
             } else {
                 mainApp.classList.add('hidden');
                 authScreen.classList.remove('hidden');
@@ -263,7 +264,6 @@
             const timeSpent = totalSeconds;
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // O caminho agora é específico para o usuário logado
             const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
 
             try {
@@ -280,7 +280,7 @@
             }
         }
 
-        function loadHistory(taskName) {
+        function loadHistory() {
             if (unsubscribeFromHistory) {
                 unsubscribeFromHistory();
             }
@@ -291,15 +291,14 @@
             historyList.innerHTML = '<p class="text-gray-400">A carregar o seu histórico...</p>';
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            // O caminho agora é específico para o usuário logado
             const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
 
-            const q = query(collection(db, collectionPath), where("taskName", "==", taskName));
+            const q = query(collection(db, collectionPath));
 
             unsubscribeFromHistory = onSnapshot(q, (querySnapshot) => {
                 historyList.innerHTML = '';
                 if (querySnapshot.empty) {
-                    historyList.innerHTML = '<p class="text-gray-400">Nenhum tempo registado por si para esta tarefa.</p>';
+                    historyList.innerHTML = '<p class="text-gray-400">Você ainda não registou nenhuma atividade.</p>';
                     return;
                 }
                 
@@ -315,16 +314,26 @@
                     const li = document.createElement('li');
                     li.className = 'flex justify-between items-center bg-gray-50 p-3 rounded-lg';
                     
-                    const timeInfo = document.createElement('span');
-                    timeInfo.className = 'font-semibold text-gray-800';
-                    timeInfo.textContent = `${mins}m ${secs}s`;
+                    const taskInfoDiv = document.createElement('div');
+                    taskInfoDiv.className = 'flex-grow text-left';
 
-                    const dateInfo = document.createElement('span');
+                    const taskNameP = document.createElement('p');
+                    taskNameP.className = 'font-semibold text-gray-800';
+                    taskNameP.textContent = entryData.taskName;
+
+                    const dateInfo = document.createElement('p');
                     dateInfo.className = 'text-xs text-gray-500';
-                    dateInfo.textContent = entryData.createdAt.toDate().toLocaleDateString('pt-BR');
+                    dateInfo.textContent = entryData.createdAt.toDate().toLocaleString('pt-BR');
                     
+                    taskInfoDiv.appendChild(taskNameP);
+                    taskInfoDiv.appendChild(dateInfo);
+
+                    const timeInfo = document.createElement('span');
+                    timeInfo.className = 'font-semibold text-gray-800 text-lg ml-4';
+                    timeInfo.textContent = `${mins}m ${secs}s`;
+                    
+                    li.appendChild(taskInfoDiv);
                     li.appendChild(timeInfo);
-                    li.appendChild(dateInfo);
                     historyList.appendChild(li);
                 });
             }, (error) => {
@@ -332,21 +341,6 @@
                 historyList.innerHTML = '<p class="text-red-500">Erro ao carregar o histórico.</p>';
             });
         }
-        
-        let debounceTimer;
-        taskNameInput.addEventListener('input', () => {
-            clearTimeout(debounceTimer);
-            const taskName = taskNameInput.value.trim();
-            if(auth.currentUser && taskName){
-                debounceTimer = setTimeout(() => {
-                    loadHistory(taskName);
-                }, 500);
-            } else {
-                 historyList.innerHTML = '';
-                 if (unsubscribeFromHistory) unsubscribeFromHistory();
-            }
-        });
-
     </script>
 </body>
 </html>
