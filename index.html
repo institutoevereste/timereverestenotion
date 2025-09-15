@@ -34,7 +34,7 @@
             </div>
             <div class="flex items-center justify-between mt-6 space-x-2">
                 <button id="login-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Entrar</button>
-                <button id="register-btn" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Registrar</button>
+                <button id="register-btn" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Registar</button>
             </div>
             <p id="auth-error" class="text-red-500 text-sm text-center mt-4"></p>
         </div>
@@ -90,7 +90,6 @@
             collection,
             addDoc,
             query,
-            where,
             onSnapshot
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -135,7 +134,11 @@
         let timerInterval = null;
         let totalSeconds = 0;
         let unsubscribeFromHistory = null;
-        let allUserEntries = []; // Armazena todas as entradas para exportação
+        let allUserEntries = []; 
+        
+        // Novas variáveis para métricas de pausa
+        let pauseStartTime = null;
+        let pauses = [];
 
         // --- LÓGICA DE AUTENTICAÇÃO ---
 
@@ -207,16 +210,22 @@
             const tableData = allUserEntries.map(entry => {
                 const date = entry.createdAt.toDate().toLocaleString('pt-BR');
                 const { mins, secs } = formatTime(entry.timeSpent);
-                const time = `${mins}m ${secs}s`;
-                return [entry.taskName, date, time];
+                const activeTime = `${mins}m ${secs}s`;
+                
+                const totalPauseTime = entry.totalPauseTime || 0;
+                const { mins: pauseMins, secs: pauseSecs } = formatTime(totalPauseTime);
+                const pauseTimeStr = `${pauseMins}m ${pauseSecs}s`;
+                const pauseCount = entry.pauseCount || 0;
+
+                return [entry.taskName, date, activeTime, pauseCount, pauseTimeStr];
             });
 
             doc.autoTable({
                 startY: 50,
-                head: [['Tarefa', 'Data de Conclusão', 'Tempo Gasto']],
+                head: [['Tarefa', 'Data', 'Tempo Ativo', 'Nº Pausas', 'Tempo Pausado']],
                 body: tableData,
                 theme: 'striped',
-                headStyles: { fillColor: [39, 174, 96] } // Verde mais escuro
+                headStyles: { fillColor: [39, 174, 96] }
             });
 
             doc.save(`relatorio_${user.email}_${new Date().toISOString().slice(0,10)}.pdf`);
@@ -252,6 +261,8 @@
         function resetTimer() {
             pauseTimer();
             totalSeconds = 0;
+            pauses = [];
+            pauseStartTime = null;
             updateDisplay();
             startBtn.classList.remove('hidden');
             pauseBtn.classList.add('hidden');
@@ -274,11 +285,18 @@
 
         pauseBtn.addEventListener('click', () => {
             pauseTimer();
+            pauseStartTime = Date.now(); // Grava o momento em que a pausa começou
             pauseBtn.classList.add('hidden');
             resumeBtn.classList.remove('hidden');
         });
 
         resumeBtn.addEventListener('click', () => {
+            if (pauseStartTime) {
+                const pauseEndTime = Date.now();
+                const pauseDuration = Math.round((pauseEndTime - pauseStartTime) / 1000); // Duração em segundos
+                pauses.push({ duration: pauseDuration });
+                pauseStartTime = null;
+            }
             startTimer();
             resumeBtn.classList.add('hidden');
             pauseBtn.classList.remove('hidden');
@@ -299,16 +317,22 @@
             const taskName = taskNameInput.value.trim();
             const timeSpent = totalSeconds;
             
+            // Calcula o tempo total de pausa a partir do array de pausas
+            const totalPauseTime = pauses.reduce((acc, p) => acc + p.duration, 0);
+
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
             const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
 
             try {
                 await addDoc(collection(db, collectionPath), {
                     taskName: taskName,
-                    timeSpent: timeSpent,
+                    timeSpent: timeSpent, // Tempo ativo
                     createdAt: new Date(),
                     userId: user.uid,
-                    userEmail: user.email
+                    userEmail: user.email,
+                    pauseCount: pauses.length, // Número de pausas
+                    totalPauseTime: totalPauseTime, // Tempo total pausado em segundos
+                    pauses: pauses // Array com a duração de cada pausa
                 });
             } catch (error) {
                 console.error("Erro ao salvar o registro de tempo: ", error);
@@ -374,12 +398,22 @@
                         const taskNameP = document.createElement('p');
                         taskNameP.className = 'font-semibold text-gray-800';
                         taskNameP.textContent = entryData.taskName;
+                        taskInfoDiv.appendChild(taskNameP);
+                        
+                        // Adiciona as métricas de pausa
+                        const pauseCount = entryData.pauseCount || 0;
+                        if (pauseCount > 0) {
+                            const totalPauseTime = entryData.totalPauseTime || 0;
+                            const { mins: pauseMins, secs: pauseSecs } = formatTime(totalPauseTime);
+                            const pauseInfoP = document.createElement('p');
+                            pauseInfoP.className = 'text-xs text-gray-500';
+                            pauseInfoP.textContent = `Pausas: ${pauseCount} (Total: ${pauseMins}m ${pauseSecs}s)`;
+                            taskInfoDiv.appendChild(pauseInfoP);
+                        }
 
                         const dateInfo = document.createElement('p');
-                        dateInfo.className = 'text-xs text-gray-500';
+                        dateInfo.className = 'text-xs text-gray-500 mt-1';
                         dateInfo.textContent = entryData.createdAt.toDate().toLocaleString('pt-BR');
-                        
-                        taskInfoDiv.appendChild(taskNameP);
                         taskInfoDiv.appendChild(dateInfo);
 
                         const timeInfo = document.createElement('span');
@@ -400,5 +434,4 @@
     </script>
 </body>
 </html>
-
 
