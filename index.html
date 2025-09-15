@@ -40,7 +40,7 @@
         <div id="main-app" class="hidden">
             <div class="bg-white rounded-xl shadow-lg p-8 text-center">
                 <div class="mb-6">
-                    <input type="text" id="task-name" placeholder="Qual é a tarefa atual?" class="w-full text-center text-lg px-4 py-3 border-b-2 border-gray-200 focus:outline-none focus:border-blue-500 transition-colors">
+                    <input type="text" id="task-name" placeholder="Digite o nome da tarefa para ver seu histórico" class="w-full text-center text-lg px-4 py-3 border-b-2 border-gray-200 focus:outline-none focus:border-blue-500 transition-colors">
                 </div>
 
                 <div class="timer-display text-7xl font-bold text-gray-800 mb-6">
@@ -55,7 +55,7 @@
                 </div>
 
                 <div class="text-left">
-                    <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Histórico de Tempo da Tarefa</h3>
+                    <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Seu Histórico de Tempo na Tarefa</h3>
                     <ul id="history-list" class="space-y-2 max-h-48 overflow-y-auto">
                         <!-- Itens do histórico serão inseridos aqui -->
                     </ul>
@@ -85,8 +85,7 @@
             addDoc,
             query,
             where,
-            onSnapshot,
-            orderBy
+            onSnapshot
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // SUA CONFIGURAÇÃO DO FIREBASE AQUI
@@ -129,13 +128,12 @@
         // Variáveis de estado do cronômetro
         let timerInterval = null;
         let totalSeconds = 0;
-        let unsubscribeFromHistory = null; // Para parar de ouvir as atualizações do histórico
+        let unsubscribeFromHistory = null;
 
         // --- LÓGICA DE AUTENTICAÇÃO ---
 
         onAuthStateChanged(auth, user => {
             if (user) {
-                // Usuário está logado
                 authScreen.classList.add('hidden');
                 mainApp.classList.remove('hidden');
                 userInfo.textContent = `Logado como: ${user.email}`;
@@ -143,7 +141,6 @@
                     loadHistory(taskNameInput.value);
                 }
             } else {
-                // Usuário não está logado
                 mainApp.classList.add('hidden');
                 authScreen.classList.remove('hidden');
                 userInfo.textContent = '';
@@ -199,7 +196,7 @@
         }
 
         function startTimer() {
-            if (timerInterval) return; // Previne múltiplos intervalos
+            if (timerInterval) return;
             timerInterval = setInterval(() => {
                 totalSeconds++;
                 updateDisplay();
@@ -252,21 +249,22 @@
         });
 
 
-        // --- LÓGICA DO FIRESTORE ---
+        // --- LÓGICA DO FIRESTORE (COM DADOS PRIVADOS) ---
 
         async function saveTimeEntry() {
             const user = auth.currentUser;
             if (!user) {
-                console.error("Usuário não autenticado. Não é possível salvar.");
+                console.error("Usuário não autenticado.");
                 return;
             }
-            if (totalSeconds === 0) return; // Não salva se o tempo for zero
+            if (totalSeconds === 0) return;
 
             const taskName = taskNameInput.value.trim();
             const timeSpent = totalSeconds;
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const collectionPath = `artifacts/${appId}/public/data/time_entries`;
+            // O caminho agora é específico para o usuário logado
+            const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
 
             try {
                 await addDoc(collection(db, collectionPath), {
@@ -278,37 +276,38 @@
                 });
             } catch (error) {
                 console.error("Erro ao salvar o registro de tempo: ", error);
-                alert("Ocorreu um erro ao salvar o seu tempo. Verifique o console para mais detalhes.");
+                alert("Ocorreu um erro ao salvar o seu tempo.");
             }
         }
 
         function loadHistory(taskName) {
-             // Cancela a inscrição anterior para evitar múltiplos ouvintes na mesma consulta
             if (unsubscribeFromHistory) {
                 unsubscribeFromHistory();
             }
 
-            historyList.innerHTML = '<p class="text-gray-400">A carregar histórico...</p>';
+            const user = auth.currentUser;
+            if (!user) return;
+
+            historyList.innerHTML = '<p class="text-gray-400">A carregar o seu histórico...</p>';
             
             const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const collectionPath = `artifacts/${appId}/public/data/time_entries`;
+            // O caminho agora é específico para o usuário logado
+            const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
 
             const q = query(collection(db, collectionPath), where("taskName", "==", taskName));
 
             unsubscribeFromHistory = onSnapshot(q, (querySnapshot) => {
                 historyList.innerHTML = '';
                 if (querySnapshot.empty) {
-                    historyList.innerHTML = '<p class="text-gray-400">Nenhum tempo registado para esta tarefa.</p>';
+                    historyList.innerHTML = '<p class="text-gray-400">Nenhum tempo registado por si para esta tarefa.</p>';
                     return;
                 }
                 
-                // Firestore não garante ordem sem um orderBy. Ordenamos aqui.
                 const entries = [];
                 querySnapshot.forEach(doc => {
                     entries.push(doc.data());
                 });
 
-                // Ordena as entradas pela data de criação, da mais recente para a mais antiga.
                 entries.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
 
                 entries.forEach(entryData => {
@@ -320,13 +319,12 @@
                     timeInfo.className = 'font-semibold text-gray-800';
                     timeInfo.textContent = `${mins}m ${secs}s`;
 
-                    const userInfo = document.createElement('span');
-                    userInfo.className = 'text-xs text-gray-500';
-                    // Mostra apenas o início do e-mail para ser mais conciso
-                    userInfo.textContent = `por ${entryData.userEmail.split('@')[0]}`;
+                    const dateInfo = document.createElement('span');
+                    dateInfo.className = 'text-xs text-gray-500';
+                    dateInfo.textContent = entryData.createdAt.toDate().toLocaleDateString('pt-BR');
                     
                     li.appendChild(timeInfo);
-                    li.appendChild(userInfo);
+                    li.appendChild(dateInfo);
                     historyList.appendChild(li);
                 });
             }, (error) => {
@@ -335,7 +333,6 @@
             });
         }
         
-        // Listener para carregar o histórico quando o nome da tarefa muda
         let debounceTimer;
         taskNameInput.addEventListener('input', () => {
             clearTimeout(debounceTimer);
@@ -343,7 +340,7 @@
             if(auth.currentUser && taskName){
                 debounceTimer = setTimeout(() => {
                     loadHistory(taskName);
-                }, 500); // Espera 500ms após o usuário parar de digitar
+                }, 500);
             } else {
                  historyList.innerHTML = '';
                  if (unsubscribeFromHistory) unsubscribeFromHistory();
