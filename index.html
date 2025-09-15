@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Emprega+ CETAM | Transforme sua formação em oportunidade</title>
+
+    <!-- Google Fonts: Poppins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <style>
+        :root {
+            --dark-blue: #243350;
+            --green: #1EAD54;
+            --bright-green: #00BF63;
+            --purple: #3D32BF;
+            --yellow: #F5EC45;
+            --grey: #909395;
+            --light-grey-bg: #f8f9fa;
+            --white: #FFFFFF;
+            --font-family: 'Poppins', sans-serif;
+            /* WhatsApp colors */
+            --whatsapp-bg: #e5ddd5;
+            --whatsapp-received-bg: #ffffff;
+            --whatsapp-sent-bg: #dcf8c6;
+        }
+
+        /* --- RESET E GLOBAIS --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: var(--font-family);
+            background-color: var(--white);
+            color: var(--dark-blue);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 80px 20px;
+        }
+
+        h1, h2, h3, h4 {
+            font-weight: 700;
+            line-height: 1.3;
+        }
+
+        h2 {
+            font-size: 2.8rem;
+            text-align: center;
+            margin-bottom: 60px;
+            color: var(--dark-blue);
+        }
+        
+        h3 {
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        p {
+            margin-bottom: 1rem;
+            color: #555;
+        }
+
+        /* --- HEADER --- */
+        .main-header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            z-index: 1000;
+            background-color: var(--dark-blue);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logo-placeholder {
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-placeholder svg {
+            height: 40px; /* Altura do logo no cabeçalho */
+            width: auto;
+        }
+
+        .main-nav ul {
+            list-style: none;
+            display: flex;
+            gap: 25px;
+        }
+
+        .main-nav a {
+            color: var(--white);
+            text-decoration: none;
+            font-weight: 600;
+            padding-bottom: 5px;
+            border-bottom: 2px solid transparent;
+            transition: color 0.3s, border-color 0.3s;
+        }
+
+        .main-nav a:hover {
+            color: var(--yellow);
+            border-bottom-color: var(--yellow);
+        }
+        
+        .mobile-menu-icon {
+            display: none;
+            cursor: pointer;
+        }
+        
+
+        /* --- HERO SECTION --- */
+        #inicio {
+            padding-top: 120px;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: var(--white);
+            background: linear-gradient(rgba(36, 51, 80, 0.7), rgba(36, 51, 80, 0.7)), url('https://i.postimg.cc/XJy4v02T/attractive-latina-woman-looking-straight-ahead-smiling-pure-white-background.jpg') no-repeat center center;
+            background-size: cover;
+        }
+
+        .hero-content {
+            max-width: 800px;
+        }
+
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            color: var(--white);
+        }
+
+        .hero-content .subtitle {
+            font-size: 1.4rem;
+            color: rgba(255, 255, 255, 0.9);
+            margin-bottom: 40px;
+        }
+        
+        .cta-button {
+            display: inline-block;
+            background-color: var(--yellow);
+            color: var(--dark-blue);
+            padding: 18px 45px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 700;
+            font-size: 1.2rem;
+            transition: background-color 0.3s ease, color 0.3s ease, transform 0.3s ease;
+            box-shadow: 0 5px 25px rgba(245, 236, 69, 0.4);
+            border: 2px solid var(--yellow);
+        }
+
+        .cta-button:hover {
+            background-color: var(--purple);
+            color: var(--white);
+            border-color: var(--purple);
+            transform: translateY(-5px);
+        }
+
+
+        /* --- SOBRE O PROGRAMA --- */
+        #sobre {
+            background-color: var(--light-grey-bg);
+        }
+        
+        .about-content {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 60px;
+        }
+
+        .about-text, .about-image {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        .about-image img {
+            width: 100%;
+            height: auto;
+            border-radius: 15px;
+            box-shadow: 0 15px 40px rgba(0,0,0,0.1);
+            object-fit: cover;
+            max-height: 500px;
+        }
+
+        .about-text h2 {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+        
+        .about-text p {
+            font-size: 1.1rem;
+            color: var(--grey);
+        }
+        
+        .about-manifesto {
+            background: var(--white);
+            padding: 40px;
+            border-left: 5px solid var(--green);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.07);
+            margin-top: 40px;
+        }
+        
+        .about-manifesto p {
+            font-style: italic;
+            font-size: 1.2rem;
+            color: var(--dark-blue);
+            font-weight: 600;
+            line-height: 1.8;
+            margin-bottom: 0;
+        }
+        
+        .about-manifesto p.signature {
+            font-style: normal;
+            font-weight: 700;
+            text-align: right;
+            margin-top: 20px;
+            color: var(--green);
+        }
+
+        /* --- SEÇÃO VANTAGENS --- */
+        .advantages-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 30px;
+        }
+
+        .advantage-card {
+            background-color: var(--white);
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+        
+        .advantage-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 15px 35px rgba(0,0,0,0.12);
+        }
+        
+        .advantage-card .icon-container {
+            margin-bottom: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+        }
+
+        .advantage-card .icon-container i {
+            width: 32px;
+            height: 32px;
+        }
+
+        .advantage-card:nth-child(1) .icon-container { color: var(--dark-blue); background-color: var(--yellow); }
+        .advantage-card:nth-child(2) .icon-container { color: var(--white); background-color: var(--purple); }
+        .advantage-card:nth-child(3) .icon-container { color: var(--white); background-color: var(--dark-blue); }
+        .advantage-card:nth-child(4) .icon-container { color: var(--white); background-color: var(--green); }
+        .advantage-card:nth-child(5) .icon-container { color: var(--dark-blue); background-color: var(--bright-green); }
+
+        .advantage-card h4 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--dark-blue);
+        }
+
+
+        /* --- COMO SE INSCREVER (WHATSAPP MOCKUP) --- */
+        #como-se-inscrever {
+            background-color: var(--light-grey-bg);
+        }
+        
+        .whatsapp-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .whatsapp-mockup {
+            width: 100%;
+            max-width: 400px;
+            height: 600px;
+            background-color: var(--whatsapp-bg);
+            border-radius: 30px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2);
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            border: 5px solid #f0f0f0;
+        }
+        
+        .whatsapp-header {
+            background-color: #075E54;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 20px 20px 0 0;
+            text-align: center;
+            font-weight: 600;
+            margin: -15px -15px 10px -15px;
+        }
+        
+        .chat-area {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .chat-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            max-width: 80%;
+            line-height: 1.5;
+            animation: fadeIn 0.5s ease-in-out;
+            font-size: 0.9rem;
+        }
+        
+        .received {
+            background-color: var(--whatsapp-received-bg);
+            align-self: flex-start;
+            border-top-left-radius: 0;
+        }
+        
+        .sent {
+            background-color: var(--whatsapp-sent-bg);
+            align-self: flex-end;
+            border-top-right-radius: 0;
+        }
+
+        .whatsapp-cta {
+            text-align: center;
+            margin-top: 50px;
+        }
+
+        .whatsapp-cta .cta-button {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- DICAS DE EMPREGABILIDADE --- */
+        #dicas {
+            background-color: var(--white);
+        }
+
+        .tips-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .tip-category {
+            background: var(--light-grey-bg);
+            padding: 30px;
+            border-radius: 15px;
+        }
+
+        .tip-category h3 {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: var(--purple);
+        }
+
+        .tip-category ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .tip-category li {
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .tip-category li i {
+            color: var(--green);
+            margin-top: 5px;
+        }
+        
+        .tip-category li span {
+            color: #555;
+        }
+        
+        .tip-category li strong {
+            color: var(--dark-blue);
+            display: block;
+        }
+
+        /* --- FEIRA DE EMPREGABILIDADE --- */
+        #feira {
+            text-align: center;
+        }
+        
+        .fair-content {
+            max-width: 700px;
+            margin: 0 auto;
+            background: linear-gradient(135deg, var(--dark-blue), var(--purple));
+            color: var(--white);
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 15px 40px rgba(61, 50, 191, 0.3);
+        }
+        
+        .fair-content h2 {
+            color: var(--white);
+            margin-bottom: 20px;
+        }
+        
+        .fair-content p {
+            color: rgba(255,255,255,0.85);
+            font-size: 1.1rem;
+            margin-bottom: 0;
+        }
+        
+        /* --- DÚVIDAS FREQUENTES (FAQ) --- */
+        #duvidas {
+            background-color: var(--light-grey-bg);
+        }
+        
+        .faq-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .faq-item {
+            background: var(--white);
+            margin-bottom: 15px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+        
+        .faq-question {
+            width: 100%;
+            text-align: left;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark-blue);
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .faq-question .icon {
+            transition: transform 0.3s ease;
+            color: var(--purple);
+        }
+        
+        .faq-answer {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.4s ease, padding 0.4s ease;
+        }
+        
+        .faq-answer p {
+            padding: 0 20px 20px;
+            margin: 0;
+            color: var(--grey);
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .faq-item.active .faq-question .icon {
+            transform: rotate(45deg);
+        }
+
+        .faq-item.active .faq-answer {
+            max-height: 300px; /* Adjust as needed */
+        }
+        
+        /* --- FOOTER --- */
+        #contato {
+            background-color: var(--dark-blue);
+            color: rgba(255, 255, 255, 0.7);
+            text-align: center;
+            padding: 30px 20px;
+        }
+        
+        .footer-content {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 25px;
+        }
+        
+        .footer-logos-container img {
+            max-width: 100%;
+            height: 180px;
+            width: auto;
+            opacity: 0.9;
+        }
+        
+        .footer-content p {
+            margin: 0;
+            font-size: 0.85rem;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* --- RESPONSIVIDADE --- */
+        @media (max-width: 992px) {
+            h2 { font-size: 2.2rem; }
+            .hero-content h1 { font-size: 2.8rem; }
+        }
+
+        @media (max-width: 768px) {
+            .hero-content h1 { font-size: 2.5rem; }
+            .about-content {
+                flex-direction: column-reverse;
+            }
+
+            .main-nav {
+                display: none;
+                flex-direction: column;
+                position: absolute;
+                top: 70px; /* Altura do header */
+                left: 0;
+                width: 100%;
+                background-color: var(--dark-blue);
+                padding: 20px 0;
+                box-shadow: 0 5px 10px rgba(0,0,0,0.2);
+            }
+            
+            .main-nav.active {
+                display: flex;
+            }
+
+            .main-nav ul {
+                flex-direction: column;
+                align-items: center;
+                gap: 0;
+            }
+            
+            .main-nav li {
+                width: 100%;
+                text-align: center;
+            }
+            
+            .main-nav a {
+                display: block;
+                padding: 15px 0;
+                width: 100%;
+            }
+
+            .mobile-menu-icon {
+                display: block;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="main-header" id="header">
+        <a href="#inicio" class="logo-placeholder">
+            <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="445" height="120" viewBox="0 0 445 120">
+                <path d="M0 0 C17 0 17 0 21.07421875 3.4375 C22.46679688 5.65234375 22.46679688 5.65234375 23.6875 8 C24.58609204 9.50068773 25.48582922 11.00069037 26.38671875 12.5 C27.01392822 13.61181641 27.01392822 13.61181641 27.65380859 14.74609375 C29.82051556 18.37377579 32.393284 21.68040851 35 25 C38.9144388 20.32200401 42.27251918 15.29494399 45.6875 10.25 C46.85712869 8.52540091 48.02765297 6.80140876 49.19921875 5.078125 C49.71315186 4.31918945 50.22708496 3.56025391 50.7565918 2.77832031 C52 1 52 1 53 0 C58.28 0 63.56 0 69 0 C69 20.79 69 41.58 69 63 C63.72 63 58.44 63 53 63 C52.67 51.78 52.34 40.56 52 29 C49.40125 32.774375 49.40125 32.774375 46.75 36.625 C46.21213867 37.40568848 45.67427734 38.18637695 45.12011719 38.99072266 C42.38055323 42.97269404 39.66932403 46.97059182 37 51 C33.49246955 50.44442148 32.19814354 49.46129147 30.125 46.61328125 C29.61453125 45.92169922 29.1040625 45.23011719 28.578125 44.51757812 C28.05734375 43.78990234 27.5365625 43.06222656 27 42.3125 C26.47921875 41.60416016 25.9584375 40.89582031 25.421875 40.16601562 C22.50145419 36.17256141 19.74794195 32.12191292 17 28 C16.67 39.55 16.34 51.1 16 63 C10.72 63 5.44 63 0 63 C0 42.21 0 21.42 0 0 Z M53 26 C54 28 54 28 54 28 Z " fill="#FFFFFF" transform="translate(44,2)"/> <path d="M0 0 C1.38893903 0.89815919 2.73481334 1.86257628 4.06640625 2.84375 C2.6221599 6.08236303 0.80868378 8.46344163 -1.55859375 11.09375 C-2.19023437 11.80015625 -2.821875 12.5065625 -3.47265625 13.234375 C-3.95476562 13.76546875 -4.436875 14.2965625 -4.93359375 14.84375 C-5.57296875 14.575625 -6.21234375 14.3075 -6.87109375 14.03125 C-7.88171875 13.639375 -8.89234375 13.2475 -9.93359375 12.84375 C-10.5884375 12.55628906 -11.24328125 12.26882812 -11.91796875 11.97265625 C-18.05904096 9.52276042 -22.69483724 9.67928346 -28.93359375 11.84375 C-34.01687253 14.52402427 -36.64682601 17.33438345 -38.62109375 22.71875 C-39.53016654 28.900445 -38.90503888 33.31071424 -35.93359375 38.84375 C-32.41158376 42.90760768 -29.53734182 45.53188045 -24.12890625 46.1796875 C-17.90327627 46.25889399 -13.73394832 46.27484653 -8.93359375 41.84375 C-7.94359375 40.52375 -6.95359375 39.20375 -5.93359375 37.84375 C-12.86359375 37.34875 -12.86359375 37.34875 -19.93359375 36.84375 C-18.93359375 30.84375 -18.93359375 30.84375 -14.93359375 22.84375 C-6.02359375 22.84375 2.88640625 22.84375 12.06640625 22.84375 C12.06640625 34.47928904 11.68232644 42.00836925 4.81640625 51.21875 C-3.46546315 59.1241708 -11.4205581 62.28746688 -22.82275391 62.20288086 C-33.12595841 61.92119865 -39.38029201 58.24567035 -46.734375 51.21484375 C-53.98662898 43.39580615 -56.38413603 35.63070838 -56.1796875 25.0234375 C-55.52925026 16.61937536 -51.14127467 8.92474805 -45.1171875 3.08203125 C-31.93959945 -7.48666058 -14.47427714 -8.65532532 0 0 Z " fill="#FFFFFF" transform="translate(320.93359375,5.15625)"/> <path d="M0 0 C28 0 28 0 38 5 C43.2034877 11.05303671 44.37274235 15.6444605 44.28125 23.3984375 C43.685632 28.90790402 41.33440667 32.72913651 37.375 36.5 C35 38 35 38 33 38 C34.93651931 40.75069178 36.87438842 43.50042994 38.8125 46.25 C39.35970703 47.02730469 39.90691406 47.80460937 40.47070312 48.60546875 C41.00244141 49.35957031 41.53417969 50.11367188 42.08203125 50.890625 C42.56905518 51.58188477 43.0560791 52.27314453 43.55786133 52.98535156 C44.56520822 54.39260169 45.61025167 55.77328655 46.68237305 57.13183594 C48 59 48 59 48 61 C48.66 61 49.32 61 50 61 C49.67 61.99 49.34 62.98 49 64 C34.12495481 65.45444886 34.12495481 65.45444886 29.00195312 61.43066406 C24.99180134 57.07435911 21.96543867 52.09927727 19 47 C18.34 46.01 17.68 45.02 17 44 C16.67 50.27 16.34 56.54 16 63 C10.72 63 5.44 63 0 63 C0 42.21 0 21.42 0 0 Z M16 14 C16 18.95 16 23.9 16 29 C21.55285502 29.49655101 21.55285502 29.49655101 26.5 27.4375 C28.60020266 24.02467068 28.63210717 21.93311127 28 18 C26.04913936 15.389089 26.04913936 15.389089 23 14 C20.69 14 18.38 14 16 14 Z " fill="#FFFFFF" transform="translate(170,2)"/> <path d="M0 0 C1.25554687 -0.03738281 2.51109375 -0.07476562 3.8046875 -0.11328125 C7.125 0.3125 7.125 0.3125 8.62670898 1.82543945 C10.684044 5.24047477 12.02559556 8.80381526 13.41796875 12.53125 C13.7255159 13.3382283 14.03306305 14.1452066 14.34992981 14.97663879 C15.34334767 17.58639745 16.328057 20.19934424 17.3125 22.8125 C18.65752737 26.35907407 20.00637561 29.90418961 21.35546875 33.44921875 C21.68352509 34.31306686 22.01158142 35.17691498 22.34957886 36.06694031 C25.15238104 43.43046849 28.06419903 50.74518356 31.12963867 58.00390625 C31.85068089 59.75139707 32.49788622 61.5291452 33.125 63.3125 C32.795 63.9725 32.465 64.6325 32.125 65.3125 C26.515 64.9825 20.905 64.6525 15.125 64.3125 C14.465 61.3425 13.805 58.3725 13.125 55.3125 C4.545 55.3125 -4.035 55.3125 -12.875 55.3125 C-13.535 58.2825 -14.195 61.2525 -14.875 64.3125 C-23.29 64.8075 -23.29 64.8075 -31.875 65.3125 C-31.02220896 61.04854478 -29.84315485 57.28604057 -28.28515625 53.265625 C-28.02482101 52.58489426 -27.76448578 51.90416351 -27.4962616 51.20280457 C-26.64757757 48.98771588 -25.79283901 46.77502657 -24.9375 44.5625 C-24.35046961 43.03658446 -23.76355639 41.51062384 -23.17675781 39.98461914 C-19.54345915 30.55311745 -15.86463802 21.13985691 -12.125 11.75 C-11.70742432 10.6990918 -11.28984863 9.64818359 -10.85961914 8.56542969 C-10.47797607 7.61442383 -10.09633301 6.66341797 -9.703125 5.68359375 C-9.3721582 4.85786865 -9.04119141 4.03214355 -8.70019531 3.18139648 C-6.91462832 -0.86254296 -4.14627366 0.08055133 0 0 Z M-0.875 22.3125 C-3.185 28.9125 -5.495 35.5125 -7.875 42.3125 C-2.595 42.3125 2.685 42.3125 8.125 42.3125 C5.815 35.7125 3.505 29.1125 1.125 22.3125 C0.465 22.3125 -0.195 22.3125 -0.875 22.3125 Z " fill="#FFFFFF" transform="translate(361.875,0.6875)"/> <path d="M0 0 C34.82222222 0 34.82222222 0 41.9375 6.8125 C45.77986797 12.75070504 46.94873727 19.03458714 46 26 C43.88651524 32.93526734 39.3939235 37.53307261 33.15625 41.03515625 C27.50442042 43.52520412 22.09795081 43.22867316 16 43 C16 49.6 16 56.2 16 63 C10.72 63 5.44 63 0 63 C0 42.21 0 21.42 0 0 Z M16 14 C16 18.95 16 23.9 16 29 C20.09806991 29.20837644 23.07163509 29.33579156 26.9375 27.9375 C29.28300978 26.0414693 29.28300978 26.0414693 30.125 22.625 C30.30524002 18.92909645 30.30524002 18.92909645 28.125 16.0625 C23.78900559 13.20074369 21.1238109 13.61762605 16 14 Z " fill="#FFFFFF" transform="translate(120,2)"/> <path d="M0 0 C12.21 0 24.42 0 37 0 C37 4.62 37 9.24 37 14 C30.07 14 23.14 14 16 14 C16 17.3 16 20.6 16 24 C22.27 24 28.54 24 35 24 C35 28.29 35 32.58 35 37 C28.73 37 22.46 37 16 37 C16 40.96 16 44.92 16 49 C23.26 49 30.52 49 38 49 C38 53.62 38 58.24 38 63 C25.46 63 12.92 63 0 63 C0 42.21 0 21.42 0 0 Z " fill="#FFFFFF" transform="translate(224,2)"/> <path d="M0 0 C12.21 0 24.42 0 37 0 C37 4.62 37 9.24 37 14 C30.07 14 23.14 14 16 14 C16 17.3 16 20.6 16 24 C22.27 24 28.54 24 35 24 C35 28.29 35 32.58 35 37 C28.73 37 22.46 37 16 37 C16 40.96 16 44.92 16 49 C23.26 49 30.52 49 38 49 C38 53.62 38 58.24 38 63 C25.46 63 12.92 63 0 63 C0 42.21 0 21.42 0 0 Z " fill="#FFFFFF" transform="translate(0,2)"/> <path d="M0 0 C54.78 0 109.56 0 166 0 C166 3.63 166 7.26 166 11 C111.22 11 56.44 11 0 11 C0 7.37 0 3.74 0 0 Z " fill="#02AE4B" transform="translate(0,100)"/> <path d="M0 0 C5.61 0 11.22 0 17 0 C19.475 8.415 19.475 8.415 22 17 C23.80238879 13.39522241 24.97159894 10.0946702 26.125 6.25 C26.74375 4.1875 27.3625 2.125 28 0 C33.61 0 39.22 0 45 0 C45 12.54 45 25.08 45 38 C41.37 38 37.74 38 34 38 C33.67 31.73 33.34 25.46 33 19 C31.35 25.27 29.7 31.54 28 38 C24.37 38 20.74 38 17 38 C15.35 31.73 13.7 25.46 12 19 C11.67 25.27 11.34 31.54 11 38 C7.37 38 3.74 38 0 38 C0 25.46 0 12.92 0 0 Z " fill="#FFFFFF" transform="translate(348,82)"/> <path d="M0 0 C11.22 0 22.44 0 34 0 C34 2.97 34 5.94 34 9 C27.07 9 20.14 9 13 9 C13 10.65 13 12.3 13 14 C19.27 14 25.54 14 32 14 C32 16.64 32 19.28 32 22 C25.73 22 19.46 22 13 22 C13 24.31 13 26.62 13 29 C19.93 29 26.86 29 34 29 C34 31.97 34 34.94 34 38 C22.78 38 11.56 38 0 38 C0 25.46 0 12.92 0 0 Z " fill="#FFFFFF" transform="translate(228,82)"/> <path d="M0 0 C1.06089844 -0.03996094 2.12179687 -0.07992187 3.21484375 -0.12109375 C6.0625 0.4375 6.0625 0.4375 7.54443359 2.49291992 C9.32685973 5.95027624 10.79383542 9.48770398 12.19921875 13.109375 C12.62567436 14.19390961 12.62567436 14.19390961 13.06074524 15.300354 C13.65693844 16.81904124 14.25099411 18.33856917 14.84301758 19.85888672 C15.75315583 22.19560237 16.66995704 24.52961823 17.58789062 26.86328125 C18.16705451 28.34099388 18.74584399 29.81885332 19.32421875 31.296875 C19.59916672 31.99786316 19.87411469 32.69885132 20.15739441 33.42108154 C22.0625 38.32072294 22.0625 38.32072294 22.0625 39.4375 C17.4425 39.4375 12.8225 39.4375 8.0625 39.4375 C7.4025 37.7875 6.7425 36.1375 6.0625 34.4375 C1.7725 34.1075 -2.5175 33.7775 -6.9375 33.4375 C-7.2675 35.4175 -7.5975 37.3975 -7.9375 39.4375 C-12.5575 39.4375 -17.1775 39.4375 -21.9375 39.4375 C-19.60341293 32.15040105 -16.91655003 25.02772916 -14.12133789 17.90551758 C-13.36772267 15.98141984 -12.62228128 14.05427372 -11.87695312 12.12695312 C-11.40064453 10.91072266 -10.92433594 9.69449219 -10.43359375 8.44140625 C-10.00232178 7.33611572 -9.5710498 6.2308252 -9.12670898 5.09204102 C-6.95579268 0.24614222 -5.05862767 0.10423839 0 0 Z M-0.9375 13.4375 C-2.4225 18.8825 -2.4225 18.8825 -3.9375 24.4375 C-1.6275 24.4375 0.6825 24.4375 3.0625 24.4375 C2.0725 20.8075 1.0825 17.1775 0.0625 13.4375 C-0.2675 13.4375 -0.5975 13.4375 -0.9375 13.4375 Z " fill="#FFFFFF" transform="translate(322.9375,80.5625)"/> <path d="M0 0 C4.26410459 3.19807844 7.42122775 6.50433818 8.5 11.875 C6.37527424 11.92886629 4.25016348 11.96773071 2.125 12 C0.34996094 12.03480469 0.34996094 12.03480469 -1.4609375 12.0703125 C-4.5 11.875 -4.5 11.875 -6.5 9.875 C-10.55261287 9.53009678 -12.04754176 9.57336118 -15.5 11.875 C-16.76143484 17.59997351 -16.51157933 21.39903406 -14.5 26.875 C-13.33622098 28.25642556 -13.33622098 28.25642556 -10.125 28.125 C-6.567949 28.30408189 -6.567949 28.30408189 -5.16015625 26.37109375 C-2.66546176 24.12293378 -0.59325866 24.58166908 2.6875 24.6875 C3.77417969 24.71457031 4.86085937 24.74164063 5.98046875 24.76953125 C7.22763672 24.82173828 7.22763672 24.82173828 8.5 24.875 C8.04713369 29.74331281 6.91678531 32.36059226 3.5 35.875 C-0.85986737 38.49137683 -4.91799327 38.24244359 -9.875 38.25 C-10.71289062 38.27449219 -11.55078125 38.29898438 -12.4140625 38.32421875 C-17.93642364 38.35026762 -21.16600966 37.6164786 -25.5 33.875 C-29.50536422 28.87103813 -30.89161486 23.48264507 -30.7734375 17.16015625 C-30.15544763 11.99552663 -28.52084855 6.88666288 -24.78125 3.1640625 C-17.54121311 -2.14325268 -8.45560918 -2.71787438 0 0 Z " fill="#FFFFFF" transform="translate(213.5,82.125)"/> <path d="M0 0 C3.63 0 7.26 0 11 0 C11 5.61 11 11.22 11 17 C16.61 17 22.22 17 28 17 C28 20.63 28 24.26 28 28 C22.39 28 16.78 28 11 28 C11 33.61 11 39.22 11 45 C7.37 45 3.74 45 0 45 C0 39.39 0 33.78 0 28 C-5.94 28 -11.88 28 -18 28 C-18 24.37 -18 20.74 -18 17 C-12.06 17 -6.12 17 0 17 C0 11.39 0 5.78 0 0 Z " fill="#FFFFFF" transform="translate(417,8)"/> <path d="M0 0 C1.56047445 0.00015913 3.12095416 0.00585397 4.68139648 0.01586914 C5.91115456 0.01799156 5.91115456 0.01799156 7.16575623 0.02015686 C9.79470406 0.0257725 12.42356797 0.0383276 15.05249023 0.05102539 C16.8304838 0.05603838 18.60847869 0.06060163 20.38647461 0.06469727 C24.75434569 0.07574701 29.12215371 0.09302208 33.48999023 0.11352539 C33.48999023 3.74352539 33.48999023 7.37352539 33.48999023 11.11352539 C29.52999023 11.11352539 25.56999023 11.11352539 21.48999023 11.11352539 C21.48999023 20.35352539 21.48999023 29.59352539 21.48999023 39.11352539 C17.19999023 39.11352539 12.90999023 39.11352539 8.48999023 39.11352539 C8.48999023 29.87352539 8.48999023 20.63352539 8.48999023 11.11352539 C4.19999023 11.11352539 -0.09000977 11.11352539 -4.51000977 11.11352539 C-4.60766602 3.39868164 -4.60766602 3.39868164 -4.51000977 1.11352539 C-3.51000977 0.11352539 -3.51000977 0.11352539 0 0 Z " fill="#FFFFFF" transform="translate(269.510009765625,80.886474609375)"/> <path d="M0 0 C18.15 0 36.3 0 55 0 C55 3.63 55 7.26 55 11 C36.85 11 18.7 11 0 11 C0 7.37 0 3.74 0 0 Z " fill="#F8EC29" transform="translate(111,100)"/> <path d="M0 0 C18.15 0 36.3 0 55 0 C55 3.63 55 7.26 55 11 C36.85 11 18.7 11 0 11 C0 7.37 0 3.74 0 0 Z " fill="#1F2362" transform="translate(0,100)"/>
+            </svg>
+        </a>
+        <nav class="main-nav" id="main-nav">
+            <ul>
+                <li><a href="#inicio">Início</a></li>
+                <li><a href="#sobre">Sobre o Programa</a></li>
+                <li><a href="#vantagens">Vantagens</a></li>
+                <li><a href="#como-se-inscrever">Como se Inscrever</a></li>
+                <li><a href="#dicas">Dicas</a></li>
+                <li><a href="#duvidas">Dúvidas</a></li>
+                <li><a href="#contato">Contato</a></li>
+            </ul>
+        </nav>
+        <div class="mobile-menu-icon" id="mobile-menu-icon">
+            <i data-feather="menu" style="color: white;"></i>
+        </div>
+    </header>
+
+    <main>
+
+        <section id="inicio">
+            <div class="container hero-content">
+                <h1>Transforme sua formação em oportunidade real</h1>
+                <p class="subtitle">O Emprega+ conecta você, estudante e egresso do CETAM, com empresas e oportunidades reais de trabalho.</p>
+                <a href="#como-se-inscrever" class="cta-button">Quero me inscrever agora</a>
+            </div>
+        </section>
+
+        <section id="sobre">
+            <div class="container">
+                <div class="about-content">
+                    <div class="about-text">
+                        <h2>Conheça o Emprega+ CETAM</h2>
+                        <p>O Emprega+ CETAM é uma iniciativa do Governo do Estado do Amazonas, executado pelo CETAM em parceria com o Instituto Evereste.</p>
+                        <p>Seu objetivo é conectar estudantes e egressos a oportunidades de emprego, estimulando a inserção qualificada e valorizando a formação técnica.</p>
+                        <div class="about-manifesto">
+                            <p>“Acreditamos no poder da formação técnica como motor de transformação social. Somos ponte. Somos presente e futuro.”</p>
+                            <p class="signature">Somos Emprega+ CETAM.</p>
+                        </div>
+                    </div>
+                    <div class="about-image">
+                        <img src="https://i.postimg.cc/VLbRYZB2/dd-1.png" 
+                             alt="Jovens estudantes em sala de aula"
+                             onerror="this.onerror=null;this.src='https://placehold.co/600x800/243350/FFFFFF?text=Imagem+indispon%C3%ADvel';">
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="vantagens">
+            <div class="container">
+                <h2>Vantagens que impulsionam sua carreira</h2>
+                <div class="advantages-grid">
+                    <div class="advantage-card">
+                        <div class="icon-container"><i data-feather="check-square"></i></div>
+                        <h4>Cadastro gratuito e rápido</h4>
+                    </div>
+                    <div class="advantage-card">
+                        <div class="icon-container"><i data-feather="book-open"></i></div>
+                        <h4>Orientação profissional e e-book</h4>
+                    </div>
+                    <div class="advantage-card">
+                        <div class="icon-container"><i data-feather="briefcase"></i></div>
+                        <h4>Conexão direta com empresas locais</h4>
+                    </div>
+                    <div class="advantage-card">
+                        <div class="icon-container"><i data-feather="award"></i></div>
+                        <h4>Selo “Perfil Avaliado – Pronto para o Mercado”</h4>
+                    </div>
+                    <div class="advantage-card">
+                        <div class="icon-container"><i data-feather="gift"></i></div>
+                        <h4>Brindes digitais e físicos (kits promocionais)</h4>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="como-se-inscrever">
+            <div class="container whatsapp-container">
+                <h2>Sua inscrição direto no WhatsApp!</h2>
+                <div class="whatsapp-mockup">
+                    <div class="whatsapp-header">Emprega+</div>
+                    <div class="chat-area">
+                        <div class="chat-bubble received">Olá! Sou o assistente virtual do Emprega+ CETAM. Para começar, clique no botão "Chamar agora" abaixo.</div>
+                        <div class="chat-bubble received">Depois, escolha a opção <strong>Alunos/Egressos</strong>.</div>
+                        <div class="chat-bubble sent">Alunos/Egressos</div>
+                        <div class="chat-bubble received">Ótimo! Agora, selecione <strong>Cadastro maior de idade</strong>.</div>
+                        <div class="chat-bubble sent">Cadastro maior de idade</div>
+                        <div class="chat-bubble received">Perfeito! Siga as instruções para preencher seus dados e enviar seu currículo em PDF para finalizar.</div>
+                    </div>
+                </div>
+                <div class="whatsapp-cta">
+                    <a href="https://wa.me/55928000927444" target="_blank" rel="noopener noreferrer" class="cta-button">
+                        <i data-feather="smartphone"></i>
+                        <span>Chamar Emprega+ agora</span>
+                    </a>
+                </div>
+            </div>
+        </section>
+        
+        <section id="dicas">
+            <div class="container">
+                <h2>Turbine suas chances de ser contratado! 🏆</h2>
+                <div class="tips-container">
+                    <div class="tip-category">
+                        <h3><i data-feather="file-text"></i>Currículo Campeão</h3>
+                        <ul>
+                            <li><i data-feather="check-circle"></i><span><strong>Seja Direto:</strong> Use palavras-chave da sua área e destaque suas principais habilidades.</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Sem Erros:</strong> Revise a gramática e a formatação. Um currículo limpo mostra profissionalismo.</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Resultados:</strong> Em vez de dizer o que fez, mostre o que conquistou. Ex: "Aumentei as vendas em 15%".</span></li>
+                        </ul>
+                    </div>
+                    <div class="tip-category">
+                        <h3><i data-feather="linkedin"></i>Brilhe no LinkedIn</h3>
+                        <ul>
+                            <li><i data-feather="check-circle"></i><span><strong>Foto Profissional:</strong> Uma boa foto de perfil aumenta a credibilidade.</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Título Estratégico:</strong> Use termos como "Técnico em..." e "Buscando oportunidade...".</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Conecte-se:</strong> Adicione recrutadores e profissionais da sua área de interesse. Interaja com publicações.</span></li>
+                        </ul>
+                    </div>
+                    <div class="tip-category">
+                        <h3><i data-feather="activity"></i>Mantenha-se Ativo</h3>
+                        <ul>
+                            <li><i data-feather="check-circle"></i><span><strong>Perfil Atualizado:</strong> Sempre que concluir um novo curso ou projeto, adicione ao seu perfil no Emprega+.</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Participe dos Eventos:</strong> Fique de olho nos webinars e feiras de empregabilidade.</span></li>
+                            <li><i data-feather="check-circle"></i><span><strong>Mostre Interesse:</strong> Uma atitude proativa e vontade de aprender são as qualidades mais valorizadas.</span></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="feira">
+            <div class="container">
+                <div class="fair-content">
+                    <h2>Fique de Olho!</h2>
+                    <p>Fique ligado nas feiras de empregabilidade do CETAM e venha conhecer pessoalmente as oportunidades com empresas parceiras!</p>
+                </div>
+            </div>
+        </section>
+
+        <section id="duvidas">
+            <div class="container">
+                <h2>Dúvidas Frequentes</h2>
+                <div class="faq-container">
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Preciso pagar para me inscrever?</span>
+                            <i data-feather="plus" class="icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Não! A inscrição e participação no Emprega+ CETAM são totalmente gratuitas para todos os alunos e egressos.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Posso participar mesmo sem experiência profissional?</span>
+                            <i data-feather="plus" class="icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Com certeza! O programa foi desenhado justamente para facilitar a inserção no mercado de trabalho, incluindo vagas de estágio e primeiro emprego.</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Já me formei faz um tempo, ainda posso participar?</span>
+                             <i data-feather="plus" class="icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Sim. O Emprega+ CETAM é destinado tanto para alunos finalistas (que estão concluindo seus cursos) quanto para egressos (quem já se formou).</p>
+                        </div>
+                    </div>
+                    <div class="faq-item">
+                        <button class="faq-question">
+                            <span>Como as empresas entram em contato comigo?</span>
+                             <i data-feather="plus" class="icon"></i>
+                        </button>
+                        <div class="faq-answer">
+                            <p>Após o "match" entre seu perfil e a vaga, a empresa parceira receberá seus dados e poderá entrar em contato diretamente por telefone, e-mail ou WhatsApp para agendar as próximas etapas do processo seletivo.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <footer id="contato">
+        <div class="container footer-content">
+            <div class="footer-logos-container">
+                <img src="https://i.postimg.cc/DZCPFfgL/cetam.png" alt="Logo do CETAM">
+            </div>
+            <p>&copy; 2025 CETAM - Centro de Educação Tecnológica do Amazonas.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Feather Icons
+        feather.replace();
+
+        // Mobile Menu Toggle
+        const mobileMenuIcon = document.getElementById('mobile-menu-icon');
+        const mainNav = document.getElementById('main-nav');
+        mobileMenuIcon.addEventListener('click', () => {
+            mainNav.classList.toggle('active');
+        });
+        
+        // Close mobile menu when a link is clicked
+        const navLinks = document.querySelectorAll('.main-nav a');
+        navLinks.forEach(link => {
+            link.addEventListener('click', () => {
+                if (mainNav.classList.contains('active')) {
+                    mainNav.classList.remove('active');
+                }
+            });
+        });
+
+        // FAQ Accordion
+        const faqItems = document.querySelectorAll('.faq-item');
+        faqItems.forEach(item => {
+            const question = item.querySelector('.faq-question');
+            question.addEventListener('click', () => {
+                const currentlyActive = document.querySelector('.faq-item.active');
+                
+                // Close other active items
+                if (currentlyActive && currentlyActive !== item) {
+                    currentlyActive.classList.remove('active');
+                }
+                
+                // Toggle the clicked item
+                item.classList.toggle('active');
+            });
+        });
+    </script>
+
+</body>
+</html>
