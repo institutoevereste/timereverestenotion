@@ -1,699 +1,879 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Timer Evereste</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf.plugin.autotable.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
+        /* Estilo para a barra de scroll */
+        ::-webkit-scrollbar {
+            width: 8px;
         }
-        .timer-display { font-variant-numeric: tabular-nums; }
-        .view-card, .chart-container { animation: fadeIn 0.5s ease-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: scale(0.98); } to { opacity: 1; transform: scale(1); } }
-        .spinner {
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            border-left-color: #fff;
-            animation: spin 1s ease infinite;
+
+        ::-webkit-scrollbar-track {
+            background: #1e293b;
         }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        .view {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
+
+        ::-webkit-scrollbar-thumb {
+            background: #4f46e5;
+            border-radius: 10px;
         }
-        .view-center {
-            justify-content: center;
-            flex-grow: 1;
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6366f1;
         }
-        #metrics-modal-content::-webkit-scrollbar, #new-task-modal-content::-webkit-scrollbar { width: 8px; }
-        #metrics-modal-content::-webkit-scrollbar-track, #new-task-modal-content::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        #metrics-modal-content::-webkit-scrollbar-thumb, #new-task-modal-content::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        #metrics-modal-content::-webkit-scrollbar-thumb:hover, #new-task-modal-content::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* Animação de fade-in */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
     </style>
 </head>
-<body class="bg-gradient-to-br from-blue-500 to-indigo-700 text-gray-800">
 
-    <!-- TELA DE LOADING INICIAL -->
-    <div id="loading-screen" class="view view-center min-h-screen">
-        <div class="spinner"></div>
-        <p class="text-white mt-4">A carregar...</p>
-    </div>
+<body class="bg-gray-900 text-gray-200 font-sans antialiased">
 
-    <!-- TELA DE AUTENTICAÇÃO -->
-    <div id="auth-screen" class="view view-center min-h-screen hidden p-4">
-        <div class="bg-white p-8 rounded-2xl shadow-2xl text-center w-full max-w-sm">
-            <img src="https://i.postimg.cc/vHwmvFrG/logo-evereste-2025-horizontal-2.png" alt="Logótipo EVERESTE" class="mx-auto h-12 mb-8">
-            <p class="text-gray-500 mb-6">Acesse sua conta para continuar</p>
-            <div class="space-y-4">
-                <input type="email" id="email" placeholder="Seu e-mail" class="w-full px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <input type="password" id="password" placeholder="Sua senha" class="w-full px-4 py-3 bg-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+    <!-- Ecrã de Autenticação -->
+    <div id="auth-container" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-blue-900 p-4">
+        <div id="auth-box" class="w-full max-w-md bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-6">
+            <div class="text-center">
+                <img src="https://i.postimg.cc/vHwmvFrG/logo-evereste-2025-horizontal-2.png" alt="Logótipo Evereste" class="w-48 mx-auto mb-6">
+                <h2 id="auth-title" class="text-2xl font-bold text-white">Bem-vindo de volta!</h2>
+                <p class="text-gray-400">Inicie sessão para continuar</p>
             </div>
-            <div class="flex items-center justify-between mt-6 space-x-3">
-                <button id="login-btn" class="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-transform transform hover:scale-105">Entrar</button>
-                <button id="register-btn" class="w-full bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300 transition-transform transform hover:scale-105">Registar</button>
-            </div>
-            <p id="auth-error" class="text-red-500 text-sm text-center mt-4 h-4"></p>
+            <form id="auth-form" class="space-y-4">
+                <input type="email" id="email" placeholder="E-mail" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                <input type="password" id="password" placeholder="Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                <p id="auth-error" class="text-red-400 text-sm h-4"></p>
+                <button type="submit" id="auth-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Entrar</button>
+            </form>
+            <p class="text-center text-sm text-gray-400">
+                <span id="auth-prompt-text">Não tem uma conta?</span>
+                <a href="#" id="toggle-auth-mode" class="font-medium text-indigo-400 hover:underline">Registrar-se</a>
+            </p>
         </div>
     </div>
 
-    <!-- TELA PRINCIPAL DO CRONÔMETRO -->
-    <div id="main-app" class="view view-center min-h-screen hidden p-4">
-        <div class="bg-white rounded-2xl shadow-2xl p-8 text-center w-full max-w-2xl">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Tarefas Ativas</h2>
-            <div id="task-slots-container" class="space-y-4 mb-6"></div>
-            <div class="text-left mt-8">
-                <h3 class="font-bold text-gray-700 mb-3 border-b pb-2">Histórico Recente</h3>
-                <div id="history-list" class="space-y-4 max-h-64 overflow-y-auto pr-2"></div>
+    <!-- Ecrã Principal da Aplicação -->
+    <div id="app-container" class="hidden min-h-screen">
+        <!-- Cabeçalho -->
+        <header class="bg-gray-800/50 backdrop-blur-sm sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-700">
+            <h1 class="text-xl font-bold text-white">Timer <span class="text-indigo-400">Evereste</span></h1>
+            <div class="flex items-center space-x-4">
+                <button id="profile-button" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
+                    <i class="fas fa-user"></i>
+                </button>
+                 <button id="logout-button" title="Sair" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-red-400 hover:bg-gray-600 transition">
+                    <i class="fas fa-sign-out-alt"></i>
+                </button>
             </div>
-        </div>
-        <div class="flex justify-between items-center mt-4 px-2 w-full max-w-2xl">
-             <p id="user-info-timer" class="text-sm text-white/80"></p>
-             <div class="flex items-center space-x-4">
-                <button id="show-personal-dashboard-btn" title="Meu Desempenho" class="text-sm font-semibold text-white/80 hover:text-white transition-colors">Meu Desempenho</button>
-                <button id="show-dashboard-btn" title="Dashboard da Equipa" class="text-sm font-semibold text-white/80 hover:text-white transition-colors">Dashboard da Equipa</button>
-                <button id="logout-btn" class="text-sm text-white/80 hover:underline">Sair</button>
-             </div>
-        </div>
-    </div>
+        </header>
 
-    <!-- TELA DO DASHBOARD DE EQUIPA -->
-    <div id="main-dashboard" class="view hidden p-4 md:p-8">
-        <div class="w-full max-w-7xl mx-auto">
-            <header class="flex flex-col md:flex-row justify-between items-center mb-8 px-2">
-                <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                    <h1 class="text-3xl font-bold text-white">Dashboard da Equipa</h1>
+        <!-- Navegação -->
+        <nav class="p-4 bg-gray-900 flex justify-center space-x-2 md:space-x-4">
+            <button data-view="timer-view" class="nav-button bg-indigo-600 px-4 py-2 rounded-lg text-sm font-semibold transition hover:bg-indigo-700">
+                <i class="fas fa-clock mr-2"></i>Timer
+            </button>
+            <button data-view="my-performance-view" class="nav-button bg-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition hover:bg-indigo-700">
+                <i class="fas fa-chart-line mr-2"></i>Meu Desempenho
+            </button>
+            <button data-view="team-dashboard-view" class="nav-button bg-gray-700 px-4 py-2 rounded-lg text-sm font-semibold transition hover:bg-indigo-700">
+                <i class="fas fa-users mr-2"></i>Equipe
+            </button>
+        </nav>
+
+        <!-- Conteúdo Principal -->
+        <main id="main-content" class="p-4 md:p-6">
+            <!-- Vista do Timer -->
+            <div id="timer-view" class="view-content fade-in space-y-6">
+                <!-- Criação de Tarefa -->
+                <div id="task-creation-container" class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                    <h2 class="text-lg font-bold mb-3">Iniciar nova tarefa</h2>
+                    <form id="new-task-form" class="flex flex-col md:flex-row gap-3">
+                        <input type="text" id="task-name" placeholder="Nome da tarefa" class="flex-grow px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                        <select id="task-tag" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                           <!-- Options will be populated by JS -->
+                        </select>
+                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Iniciar</button>
+                    </form>
+                     <p id="task-limit-error" class="text-red-400 text-sm mt-2 h-4"></p>
                 </div>
-                <div class="flex items-center space-x-4">
-                     <button id="show-timer-btn" class="text-sm text-white/80 hover:underline">Voltar ao Timer</button>
-                     <button id="show-metrics-btn" class="text-sm text-white/80 hover:underline">Entenda as Métricas</button>
-                     <div class="relative">
-                        <button id="export-dropdown-btn" class="text-sm text-white/80 hover:underline">Exportar Relatório</button>
-                        <div id="export-dropdown-menu" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-10 hidden">
-                            <a href="#" id="export-global-pdf-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar PDF</a>
-                            <a href="#" id="export-global-csv-btn" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Exportar CSV</a>
-                        </div>
+                <!-- Tarefas Ativas -->
+                <div>
+                    <h2 class="text-xl font-bold mb-4">Tarefas Ativas</h2>
+                    <div id="active-tasks-container" class="space-y-4">
+                        <!-- Tasks will be rendered here -->
                     </div>
-                    <button id="logout-btn-dashboard" class="text-sm text-white/80 hover:underline">Sair</button>
                 </div>
-            </header>
-            <div id="dashboard-content">
-                <div id="dashboard-loading" class="flex justify-center items-center py-16"><div class="spinner"></div></div>
-                <div id="dashboard-data" class="hidden">
-                    <div id="global-metrics" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"></div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="chart-container bg-white p-6 rounded-xl shadow-lg"><h2 class="text-xl font-semibold mb-4 text-gray-700">Tempo por Categoria</h2><div class="relative h-96"><canvas id="tagsChart"></canvas></div></div>
-                        <div class="chart-container bg-white p-6 rounded-xl shadow-lg"><h2 class="text-xl font-semibold mb-4 text-gray-700">Tempo por Colaborador</h2><div class="relative h-96"><canvas id="usersChart"></canvas></div></div>
-                    </div>
-                    <div class="mt-8 bg-white p-6 rounded-xl shadow-lg"><h2 class="text-xl font-semibold mb-4 text-gray-700">Log de Atividades da Equipa</h2><div class="overflow-x-auto"><table class="min-w-full text-sm"><thead class="bg-gray-50"><tr><th class="px-4 py-2 text-left font-semibold text-gray-600">Colaborador</th><th class="px-4 py-2 text-left font-semibold text-gray-600">Tarefa</th><th class="px-4 py-2 text-left font-semibold text-gray-600">Data</th><th class="px-4 py-2 text-left font-semibold text-gray-600">Período</th><th class="px-4 py-2 text-left font-semibold text-gray-600">Tempo Ativo</th><th class="px-4 py-2 text-left font-semibold text-gray-600">Pausas</th></tr></thead><tbody id="activity-log-body"></tbody></table></div></div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- TELA DO DASHBOARD PESSOAL -->
-     <div id="personal-dashboard" class="view hidden p-4 md:p-8">
-        <div class="w-full max-w-7xl mx-auto">
-            <header class="flex flex-col md:flex-row justify-between items-center mb-8 px-2">
-                <div class="flex items-center space-x-4 mb-4 md:mb-0">
-                    <h1 class="text-3xl font-bold text-white">Meu Desempenho</h1>
-                </div>
-                <div class="flex items-center space-x-4">
-                     <button id="show-timer-btn-personal" class="text-sm text-white/80 hover:underline">Voltar ao Timer</button>
-                     <button id="export-pdf-btn-personal" class="text-sm text-white/80 hover:underline">Exportar Meu Histórico</button>
-                    <button id="logout-btn-personal-dashboard" class="text-sm text-white/80 hover:underline">Sair</button>
-                </div>
-            </header>
-            <div id="personal-dashboard-content">
-                <div id="personal-dashboard-loading" class="flex justify-center items-center py-16"><div class="spinner"></div></div>
-                <div id="personal-dashboard-data" class="hidden">
-                    <div id="personal-metrics" class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"></div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                         <div class="chart-container bg-white p-6 rounded-xl shadow-lg"><h2 class="text-xl font-semibold mb-4 text-gray-700">Meu Tempo por Categoria</h2><div class="relative h-96"><canvas id="personalTagsChart"></canvas></div></div>
-                         <div class="chart-container bg-white p-6 rounded-xl shadow-lg"><h2 class="text-xl font-semibold mb-4 text-gray-700">Meu Histórico Completo</h2><div id="personal-history-list" class="space-y-4 max-h-96 overflow-y-auto pr-2"></div></div>
+                <!-- Histórico Recente -->
+                <div>
+                    <h2 class="text-xl font-bold mb-4">Últimas 5 Tarefas Finalizadas</h2>
+                    <div id="recent-history-container" class="bg-gray-800 p-4 rounded-xl shadow-lg space-y-3">
+                        <!-- Recent history items will be rendered here -->
+                         <p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>
                     </div>
                 </div>
             </div>
-        </div>
+
+            <!-- Vista Meu Desempenho -->
+            <div id="my-performance-view" class="view-content fade-in hidden">
+                <!-- Content will be injected by JS -->
+            </div>
+
+            <!-- Vista Dashboard da Equipa -->
+            <div id="team-dashboard-view" class="view-content fade-in hidden">
+                <!-- Content will be injected by JS -->
+            </div>
+        </main>
     </div>
 
-    <!-- MODAIS (sem alterações) -->
-    <div id="new-task-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
-        <div id="new-task-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8 relative view-card">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Iniciar Nova Tarefa</h2>
-            <div class="space-y-4 text-left"><input type="text" id="new-task-name" placeholder="Nome da Tarefa Específica" class="w-full text-md px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"><select id="new-task-tag" class="w-full text-md px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"><option value="" disabled selected>Selecione uma Categoria</option></select></div>
-            <div class="flex items-center justify-end mt-8 space-x-3"><button id="cancel-new-task-btn" class="bg-gray-200 text-gray-700 px-6 py-2 rounded-lg font-semibold hover:bg-gray-300 transition-colors">Cancelar</button><button id="save-new-task-btn" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">Iniciar Tarefa</button></div>
-        </div>
-    </div>
-    <div id="metrics-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 hidden z-50">
-        <div id="metrics-modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto p-8 relative view-card">
-            <button id="close-metrics-btn" class="absolute top-4 right-4 text-gray-400 hover:text-gray-800 transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
-            <h2 class="text-2xl font-bold text-gray-800 mb-4">Maximizando a Eficiência</h2><p class="text-gray-600 mb-8">A análise criteriosa dos dados de tempo permite identificar padrões, otimizar processos e promover um ambiente de trabalho mais produtivo.</p>
-            <div class="space-y-8">
-                 <div><h3 class="text-xl font-semibold text-gray-700 mb-4">Métricas de Produtividade e Gestão do Tempo</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border border-gray-200 rounded-lg"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Métrica</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importância</th></tr></thead><tbody class="divide-y divide-gray-200"><tr><td class="px-6 py-4 font-semibold">Tempo Total Trabalhado</td><td class="px-6 py-4">Soma de todo o tempo gasto em atividades de trabalho, excluindo as pausas.</td><td class="px-6 py-4">Fornece uma visão geral do esforço dedicado às tarefas.</td></tr><tr><td class="px-6 py-4 font-semibold">Tempo por Atividade/Projeto</td><td class="px-6 py-4">Tempo específico alocado para cada tarefa ou projeto individual.</td><td class="px-6 py-4">Ajuda a identificar as atividades que consomem mais tempo e a estimar prazos.</td></tr><tr><td class="px-6 py-4 font-semibold">Horas Produtivas vs. Ociosas</td><td class="px-6 py-4">Comparação entre o tempo gasto em tarefas produtivas e o tempo não alocado.</td><td class="px-6 py-4">Permite identificar gargalos e a necessidade de melhorias nos processos.</td></tr></tbody></table></div></div>
-                 <div><h3 class="text-xl font-semibold text-gray-700 mb-4">Métricas de Foco e Interrupções</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border border-gray-200 rounded-lg"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Métrica</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importância</th></tr></thead><tbody class="divide-y divide-gray-200"><tr><td class="px-6 py-4 font-semibold">Duração e Frequência das Pausas</td><td class="px-6 py-4">Tempo total gasto em pausas e o número de intervalos realizados.</td><td class="px-6 py-4">Ajuda a garantir que as pausas estão sendo utilizadas de forma eficaz.</td></tr><tr><td class="px-6 py-4 font-semibold">Tempo de Foco Contínuo</td><td class="px-6 py-4">Períodos de trabalho ininterrupto dedicados a uma única tarefa.</td><td class="px-6 py-4">Indica a capacidade de concentração.</td></tr></tbody></table></div></div>
-                 <div><h3 class="text-xl font-semibold text-gray-700 mb-4">Métricas de Desempenho e Eficiência</h3><div class="overflow-x-auto"><table class="min-w-full bg-white border border-gray-200 rounded-lg"><thead class="bg-gray-50"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Métrica</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Descrição</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Importância</th></tr></thead><tbody class="divide-y divide-gray-200"><tr><td class="px-6 py-4 font-semibold">Tempo Real vs. Estimado</td><td class="px-6 py-4">Comparação entre o tempo planejado para uma tarefa e o tempo efetivamente gasto.</td><td class="px-6 py-4">Ajuda a refinar as estimativas de tempo para projetos futuros.</td></tr><tr><td class="px-6 py-4 font-semibold">Produtividade por Hora</td><td class="px-6 py-4">Quantidade de trabalho ou valor gerado por hora trabalhada.</td><td class="px-6 py-4">Permite comparar a eficiência entre diferentes períodos ou membros da equipe.</td></tr></tbody></table></div></div>
+    <!-- Modal do Perfil -->
+    <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
+            <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <i class="fas fa-times fa-lg"></i>
+            </button>
+            <h2 class="text-2xl font-bold mb-2">Meu Perfil</h2>
+            <p id="profile-email" class="text-indigo-400 mb-6"></p>
+
+            <div>
+                 <h3 class="text-lg font-semibold mb-4">Desempenho nos Últimos 7 Dias</h3>
+                 <div id="profile-dashboard-container" class="relative min-h-[280px]">
+                    <!-- O conteúdo do dashboard do perfil será injetado aqui pelo JavaScript -->
+                 </div>
             </div>
         </div>
     </div>
-
-
+    
     <script type="module">
+        // Importar funções do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, collectionGroup, addDoc, query, onSnapshot, doc, setDoc, getDoc, deleteDoc, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            addDoc,
+            onSnapshot,
+            query,
+            where,
+            orderBy,
+            limit,
+            deleteDoc,
+            getDocs,
+            Timestamp,
+            collectionGroup
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // =================================================================================
+        // 1. CONFIGURAÇÃO DO FIREBASE
+        // =================================================================================
         const firebaseConfig = {
-          apiKey: "AIzaSyDWlCZfFngDEeEWbsF8t2BDxlhMc2GSDpg",
-          authDomain: "temporizadoratividadeevereste.firebaseapp.com",
-          projectId: "temporizadoratividadeevereste",
-          storageBucket: "temporizadoratividadeevereste.appspot.com",
-          messagingSenderId: "178777151387",
-          appId: "1:178777151387:web:18a108dd769c6b911a333e",
-          measurementId: "G-8CQ3VSSXNF"
+            apiKey: "AIzaSyAcSeRZc5wzhne2tuV-BWiKM2Euw9CJy9U",
+            authDomain: "timerevereste.firebaseapp.com",
+            projectId: "timerevereste",
+            storageBucket: "timerevereste.appspot.com",
+            messagingSenderId: "469617910016",
+            appId: "1:469617910016:web:9076d1bb4905667bb353e5",
+            measurementId: "G-K1YGJ0NHCL"
         };
-
+        
+        // =================================================================================
+        // 2. INICIALIZAÇÃO E VARIÁVEIS GLOBAIS
+        // =================================================================================
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- TAGS DE ATIVIDADES ---
-        const taskTags = ["Gestão de Projetos", "Análise de Dados", "Web Design", "UX", "UI", "App", "Pré-Produção", "Roteiro", "Edição de Vídeos", "Edição de Fotos", "Audiovisual", "Captação Material", "Pós-Produção", "Evento", "Cerimonial", "Portal", "E-mail", "WhatsApp", "LinkedIn", "Instagram", "Youtube", "Tiktok", "Flickr", "Facebook", "TV Evereste", "Impressão", "Assessoria de Comunicação", "HYPERDOC", "Documento", "Comunicação", "Agendamento", "Reunião", "Planejamento", "Treinamento", "Pesquisa", "Notícia", "Atividade Externa", "Apresentação", "Design Gráfico", "Design de Produtos", "Design 3D", "Motion Design", "Social Media", "Copywriting", "Endomarketing", "Identidade Visual", "Mídia Paga"];
-        const newTaskTagSelect = document.getElementById('new-task-tag');
-        taskTags.sort().forEach(tag => {
+        let currentUser = null;
+        let activeTasks = [];
+        let timerIntervals = {};
+        let unsubscribeActiveTasks = null;
+        let unsubscribeRecentHistory = null;
+        
+        const TAG_OPTIONS = [
+            "Gestão de Projetos", "Análise de Dados", "Desenvolvimento", 
+            "Design UX/UI", "Marketing", "Reuniões", "Suporte ao Cliente", 
+            "Planeamento Estratégico", "Recursos Humanos", "Outros"
+        ];
+
+        // Popular as tags
+        const taskTagSelect = document.getElementById('task-tag');
+        TAG_OPTIONS.forEach(tag => {
             const option = document.createElement('option');
             option.value = tag;
             option.textContent = tag;
-            newTaskTagSelect.appendChild(option);
+            taskTagSelect.appendChild(option);
         });
-
-        // --- REFERÊNCIAS GERAIS ---
-        const loadingScreen = document.getElementById('loading-screen');
-        const authScreen = document.getElementById('auth-screen');
-        const mainApp = document.getElementById('main-app');
-        const mainDashboard = document.getElementById('main-dashboard');
-        const personalDashboard = document.getElementById('personal-dashboard');
-        const emailInput = document.getElementById('email');
-        const passwordInput = document.getElementById('password');
-        const loginBtn = document.getElementById('login-btn');
-        const registerBtn = document.getElementById('register-btn');
+        
+        // =================================================================================
+        // 3. LÓGICA DE AUTENTICAÇÃO
+        // =================================================================================
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const authForm = document.getElementById('auth-form');
         const authError = document.getElementById('auth-error');
+        const toggleAuthModeLink = document.getElementById('toggle-auth-mode');
+        const authTitle = document.getElementById('auth-title');
+        const authPromptText = document.getElementById('auth-prompt-text');
+        const authButton = document.getElementById('auth-button');
 
-        // --- REFERÊNCIAS DO TIMER ---
-        const userInfoTimer = document.getElementById('user-info-timer');
-        const historyList = document.getElementById('history-list');
-        const logoutBtn = document.getElementById('logout-btn');
-        const showDashboardBtn = document.getElementById('show-dashboard-btn');
-        const showPersonalDashboardBtn = document.getElementById('show-personal-dashboard-btn');
-        const taskSlotsContainer = document.getElementById('task-slots-container');
-        const newTaskModal = document.getElementById('new-task-modal');
-        const newTaskNameInput = document.getElementById('new-task-name');
-        const cancelNewTaskBtn = document.getElementById('cancel-new-task-btn');
-        const saveNewTaskBtn = document.getElementById('save-new-task-btn');
+        let isLoginMode = true;
 
-        // --- REFERÊNCIAS DO DASHBOARD DE EQUIPA ---
-        const dashboardLoading = document.getElementById('dashboard-loading');
-        const dashboardData = document.getElementById('dashboard-data');
-        const globalMetricsContainer = document.getElementById('global-metrics');
-        const exportDropdownBtn = document.getElementById('export-dropdown-btn');
-        const exportDropdownMenu = document.getElementById('export-dropdown-menu');
-        const exportGlobalPdfBtn = document.getElementById('export-global-pdf-btn');
-        const exportGlobalCsvBtn = document.getElementById('export-global-csv-btn');
-        const logoutBtnDashboard = document.getElementById('logout-btn-dashboard');
-        const showTimerBtn = document.getElementById('show-timer-btn');
-        const metricsModal = document.getElementById('metrics-modal');
-        const showMetricsBtn = document.getElementById('show-metrics-btn');
-        const closeMetricsBtn = document.getElementById('close-metrics-btn');
-        const activityLogBody = document.getElementById('activity-log-body');
+        // Alternar entre Login e Registo
+        toggleAuthModeLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            isLoginMode = !isLoginMode;
+            authError.textContent = '';
+            authForm.reset();
 
-        // --- REFERÊNCIAS DO DASHBOARD PESSOAL ---
-        const personalDashboardLoading = document.getElementById('personal-dashboard-loading');
-        const personalDashboardData = document.getElementById('personal-dashboard-data');
-        const personalMetricsContainer = document.getElementById('personal-metrics');
-        const personalHistoryList = document.getElementById('personal-history-list');
-        const exportPdfBtnPersonal = document.getElementById('export-pdf-btn-personal');
-        const logoutBtnPersonalDashboard = document.getElementById('logout-btn-personal-dashboard');
-        const showTimerBtnPersonal = document.getElementById('show-timer-btn-personal');
-        
-        // --- ESTADO GLOBAL ---
-        let timerInterval = null, unsubscribeFromHistory = null, allUserEntries = [], unsubscribeFromActiveTasks = null, activeTasks = [];
-        let unsubscribeFromDashboard = null, allDashboardEntries = [], tagsChartInstance = null, usersChartInstance = null;
-        let unsubscribeFromPersonalHistory = null, personalTagsChartInstance = null;
-        
-        // --- LÓGICA DE NAVEGAÇÃO E AUTENTICAÇÃO ---
-        
-        function showView(viewId) {
-            document.querySelectorAll('.view').forEach(view => view.classList.add('hidden'));
-            if (viewId) document.getElementById(viewId).classList.remove('hidden');
-        }
-
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                showView('main-app');
-                userInfoTimer.textContent = `Logado como: ${user.email}`;
-                loadHistory();
-                loadActiveTasks();
+            if (isLoginMode) {
+                authTitle.textContent = 'Bem-vindo de volta!';
+                authButton.textContent = 'Entrar';
+                authPromptText.textContent = 'Não tem uma conta?';
+                toggleAuthModeLink.textContent = 'Registrar-se';
             } else {
-                showView('auth-screen');
-                if(unsubscribeFromHistory) unsubscribeFromHistory();
-                if(unsubscribeFromDashboard) unsubscribeFromDashboard();
-                if(unsubscribeFromActiveTasks) unsubscribeFromActiveTasks();
-                if(unsubscribeFromPersonalHistory) unsubscribeFromPersonalHistory();
-                allUserEntries = [], activeTasks = [];
-                destroyCharts();
-                clearInterval(timerInterval);
+                authTitle.textContent = 'Crie a sua conta';
+                authButton.textContent = 'Registar';
+                authPromptText.textContent = 'Já tem uma conta?';
+                toggleAuthModeLink.textContent = 'Entrar';
             }
-            loadingScreen.classList.add('hidden');
         });
 
-        async function handleLogout() {
+        // Submeter formulário de autenticação
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            authError.textContent = '';
+
             try {
-                await pauseAllActiveTasks();
-                await signOut(auth);
-            } catch (error) { console.error("Erro ao sair: ", error); }
-        }
-        
-        registerBtn.addEventListener('click', async () => { authError.textContent = ''; try { await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } catch (error) { authError.textContent = "Erro ao registar: " + error.message; } });
-        loginBtn.addEventListener('click', async () => { authError.textContent = ''; try { await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value); } catch (error) { authError.textContent = "Erro ao entrar: " + error.message; } });
-        logoutBtn.addEventListener('click', handleLogout);
-        logoutBtnDashboard.addEventListener('click', handleLogout);
-        logoutBtnPersonalDashboard.addEventListener('click', handleLogout);
-
-        showDashboardBtn.addEventListener('click', () => { showView('main-dashboard'); loadDashboardData(); });
-        showPersonalDashboardBtn.addEventListener('click', () => { showView('personal-dashboard'); loadPersonalDashboardData(); });
-        showTimerBtn.addEventListener('click', () => { showView('main-app'); if(unsubscribeFromDashboard) unsubscribeFromDashboard(); destroyCharts(); });
-        showTimerBtnPersonal.addEventListener('click', () => { showView('main-app'); if(unsubscribeFromPersonalHistory) unsubscribeFromPersonalHistory(); destroyCharts(); });
-        
-        showMetricsBtn.addEventListener('click', () => metricsModal.classList.remove('hidden'));
-        closeMetricsBtn.addEventListener('click', () => metricsModal.classList.add('hidden'));
-        exportDropdownBtn.addEventListener('click', () => exportDropdownMenu.classList.toggle('hidden'));
-        document.addEventListener('click', (e) => {
-            if (!exportDropdownBtn.contains(e.target) && !exportDropdownMenu.contains(e.target)) {
-                exportDropdownMenu.classList.add('hidden');
+                if (isLoginMode) {
+                    await signInWithEmailAndPassword(auth, email, password);
+                } else {
+                    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    // Criar perfil de utilizador inicial no Firestore
+                    const userProfileRef = doc(db, `artifacts/default-app-id/users/${userCredential.user.uid}/profile/settings`);
+                    await setDoc(userProfileRef, { email: userCredential.user.email });
+                }
+                // onAuthStateChanged irá tratar da transição do UI
+            } catch (error) {
+                console.error("Authentication error:", error);
+                handleAuthError(error);
             }
         });
-       
-        // --- FUNÇÕES DO TIMER MULTITAREFA ---
+
+        function handleAuthError(error) {
+             switch (error.code) {
+                case 'auth/invalid-email':
+                    authError.textContent = 'Formato de e-mail inválido.';
+                    break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                     authError.textContent = 'E-mail ou senha incorretos.';
+                    break;
+                case 'auth/email-already-in-use':
+                     authError.textContent = 'Este e-mail já está a ser utilizado.';
+                    break;
+                case 'auth/weak-password':
+                     authError.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+                    break;
+                default:
+                     authError.textContent = 'Ocorreu um erro. Tente novamente.';
+                    break;
+            }
+        }
+
+
+        // Observador do estado de autenticação
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                authContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                loadUserProfile();
+                setupListeners();
+            } else {
+                currentUser = null;
+                authContainer.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                cleanupListeners();
+                clearUI();
+            }
+        });
+
+        // Logout
+        document.getElementById('logout-button').addEventListener('click', async () => {
+            await signOut(auth);
+        });
+
+        // =================================================================================
+        // 4. LÓGICA DO TIMER E GESTÃO DE TAREFAS
+        // =================================================================================
+        const newTaskForm = document.getElementById('new-task-form');
+        const taskLimitError = document.getElementById('task-limit-error');
+        const activeTasksContainer = document.getElementById('active-tasks-container');
         
-        function getActiveTasksCollectionRef() {
-            const user = auth.currentUser;
-            if (!user) return null;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            return collection(db, `artifacts/${appId}/users/${user.uid}/active_timers`);
+        // Iniciar nova tarefa
+        newTaskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (activeTasks.length >= 3) {
+                taskLimitError.textContent = 'Pode ter no máximo 3 tarefas ativas.';
+                setTimeout(() => taskLimitError.textContent = '', 3000);
+                return;
+            }
+
+            const taskName = document.getElementById('task-name').value;
+            const taskTag = document.getElementById('task-tag').value;
+
+            const newTask = {
+                name: taskName,
+                tag: taskTag,
+                ownerId: currentUser.uid,
+                status: 'paused',
+                startTime: Timestamp.now(),
+                lastStartTime: null,
+                totalActiveTime: 0,
+                totalPausedTime: 0,
+                pauseCount: 0,
+                lastPauseTime: Timestamp.now(),
+            };
+
+            try {
+                const collectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`);
+                await addDoc(collectionRef, newTask);
+                newTaskForm.reset();
+            } catch (error) {
+                console.error("Error adding new task:", error);
+            }
+        });
+
+        // Iniciar ou Pausar um timer
+        function startTimer(task) {
+            if (timerIntervals[task.id]) return; // Já está a correr
+
+            timerIntervals[task.id] = setInterval(() => {
+                task.totalActiveTime++;
+                const timerElement = document.getElementById(`timer-${task.id}`);
+                if (timerElement) {
+                    timerElement.textContent = formatTime(task.totalActiveTime);
+                }
+            }, 1000);
         }
 
-        function loadActiveTasks() {
-            if (unsubscribeFromActiveTasks) unsubscribeFromActiveTasks();
-            const collRef = getActiveTasksCollectionRef();
-            if (!collRef) return;
-
-            unsubscribeFromActiveTasks = onSnapshot(query(collRef), (snapshot) => {
-                const now = new Date();
-                activeTasks = snapshot.docs.map(doc => {
-                    const data = doc.data();
-                    let totalSeconds = data.totalSeconds || 0;
-                    if (!data.isPaused && data.lastSavedAt) {
-                        const elapsed = Math.floor((now - data.lastSavedAt.toDate()) / 1000);
-                        totalSeconds += elapsed;
-                    }
-                    return { id: doc.id, ...data, totalSeconds };
-                });
-                renderTaskSlots();
-                manageTimerInterval();
-            });
+        function pauseTimer(taskId) {
+            clearInterval(timerIntervals[taskId]);
+            delete timerIntervals[taskId];
         }
 
-        function renderTaskSlots() {
-            taskSlotsContainer.innerHTML = '';
-            activeTasks.forEach(task => {
-                const timeString = formatTimeTimer(task.totalSeconds);
-                const isRunning = !task.isPaused;
-                const slotHTML = `
-                    <div class="bg-white p-4 rounded-lg flex items-center justify-between transition-all duration-300 ${isRunning ? 'bg-green-50 ring-2 ring-green-500' : 'bg-gray-50'}">
-                        <div class="text-left">
-                            <div class="flex items-center gap-2">
-                                <p class="font-bold text-gray-800">${task.taskName}</p>
-                                ${isRunning ? '<span class="text-xs bg-green-200 text-green-800 font-semibold px-2 py-0.5 rounded-full">ATIVA</span>' : ''}
-                            </div>
-                            <p class="text-sm text-gray-500">${task.taskTag}</p>
-                        </div>
+        // Atualizar o estado da tarefa no Firestore
+        async function updateTaskInFirestore(taskId, updates) {
+            if (!currentUser) return;
+            const taskRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskId);
+            await setDoc(taskRef, updates, { merge: true });
+        }
+        
+        // Continuar uma tarefa
+        async function continueTask(taskToContinue) {
+             // Pausar todas as outras tarefas ativas
+            for (const task of activeTasks) {
+                if (task.id !== taskToContinue.id && task.status === 'running') {
+                    await pauseTask(task);
+                }
+            }
+
+            const now = Timestamp.now();
+            const pauseDuration = now.seconds - taskToContinue.lastPauseTime.seconds;
+            
+            const updates = {
+                status: 'running',
+                lastStartTime: now,
+                totalPausedTime: taskToContinue.totalPausedTime + pauseDuration
+            };
+            await updateTaskInFirestore(taskToContinue.id, updates);
+        }
+        
+        // Pausar uma tarefa
+        async function pauseTask(taskToPause) {
+            const now = Timestamp.now();
+            const activeDuration = now.seconds - taskToPause.lastStartTime.seconds;
+
+            const updates = {
+                status: 'paused',
+                lastPauseTime: now,
+                totalActiveTime: taskToPause.totalActiveTime + activeDuration,
+                pauseCount: taskToPause.pauseCount + 1
+            };
+             await updateTaskInFirestore(taskToPause.id, updates);
+        }
+
+        // Finalizar uma tarefa
+        async function finishTask(taskToFinish) {
+            pauseTimer(taskToFinish.id); // Para o intervalo local
+            let finalActiveTime = taskToFinish.totalActiveTime;
+
+            if (taskToFinish.status === 'running') {
+                 const now = Timestamp.now();
+                 const activeDuration = now.seconds - taskToFinish.lastStartTime.seconds;
+                 finalActiveTime += activeDuration;
+            }
+
+            const finishedTask = {
+                name: taskToFinish.name,
+                tag: taskToFinish.tag,
+                ownerId: taskToFinish.ownerId,
+                userEmail: currentUser.email, // Adicionar para o dashboard da equipa
+                startTime: taskToFinish.startTime,
+                endTime: Timestamp.now(),
+                totalActiveTime: finalActiveTime,
+                totalPausedTime: taskToFinish.totalPausedTime,
+                pauseCount: taskToFinish.pauseCount
+            };
+            
+            try {
+                // Adicionar ao histórico (time_entries)
+                const historyCollectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`);
+                await addDoc(historyCollectionRef, finishedTask);
+
+                // Remover da lista de tarefas ativas
+                const taskRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskToFinish.id);
+                await deleteDoc(taskRef);
+
+            } catch(error) {
+                console.error("Error finishing task: ", error);
+            }
+        }
+        
+        // Renderizar tarefas ativas
+        function renderActiveTasks(tasks) {
+            activeTasks = tasks; // Atualizar a variável global
+            activeTasksContainer.innerHTML = '';
+            if (tasks.length === 0) {
+                 activeTasksContainer.innerHTML = `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>`;
+                 return;
+            }
+            
+            tasks.forEach(task => {
+                const isRunning = task.status === 'running';
+
+                // Calcular tempo decorrido em tempo real
+                let displayTime = task.totalActiveTime;
+                if(isRunning && task.lastStartTime) {
+                    const nowInSeconds = Math.floor(Date.now() / 1000);
+                    displayTime += (nowInSeconds - task.lastStartTime.seconds);
+                }
+
+                const taskCard = document.createElement('div');
+                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'}`;
+                taskCard.id = `task-${task.id}`;
+                taskCard.innerHTML = `
+                    <div class="flex-grow text-center md:text-left">
                         <div class="flex items-center gap-3">
-                            <span class="timer-display text-2xl font-semibold w-24 text-center ${isRunning ? 'text-green-600' : 'text-gray-800'}">${timeString}</span>
-                            ${!isRunning 
-                                ? `<button data-id="${task.id}" class="resume-btn bg-green-500 text-white p-2 rounded-full hover:bg-green-600 transition-transform transform hover:scale-110"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg></button>` 
-                                : `<button data-id="${task.id}" class="pause-btn bg-yellow-500 text-white p-2 rounded-full hover:bg-yellow-600 transition-transform transform hover:scale-110"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg></button>`
-                            }
-                            <button data-id="${task.id}" class="finish-btn bg-red-500 text-white p-2 rounded-full hover:bg-red-600 transition-transform transform hover:scale-110"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></button>
+                             ${isRunning ? '<span class="text-xs font-bold uppercase bg-green-500 text-gray-900 px-2 py-1 rounded">ATIVA</span>' : ''}
+                            <h3 class="font-bold text-lg">${task.name || 'Tarefa sem nome'}</h3>
                         </div>
-                    </div>`;
-                taskSlotsContainer.insertAdjacentHTML('beforeend', slotHTML);
-            });
-
-            if (activeTasks.length < 3) {
-                const addTaskHTML = `<button id="add-task-btn" class="w-full border-2 border-dashed border-gray-300 text-gray-500 rounded-lg py-4 hover:bg-gray-100 hover:border-gray-400 transition-colors">+ Iniciar Nova Tarefa</button>`;
-                taskSlotsContainer.insertAdjacentHTML('beforeend', addTaskHTML);
-                document.getElementById('add-task-btn').addEventListener('click', openNewTaskModal);
-            }
-        }
-        
-        function manageTimerInterval() {
-            clearInterval(timerInterval);
-            const runningTask = activeTasks.find(t => !t.isPaused);
-            if (runningTask) {
-                timerInterval = setInterval(() => {
-                    const taskToUpdate = activeTasks.find(t => !t.isPaused);
-                    if (taskToUpdate) {
-                        taskToUpdate.totalSeconds++;
-                        renderTaskSlots();
-                    }
-                }, 1000);
-            }
-        }
-
-        async function updateAndPauseTask(task) {
-            const collRef = getActiveTasksCollectionRef();
-            const docRef = doc(collRef, task.id);
-            const now = new Date();
-            let elapsed = 0;
-            if (task.lastSavedAt) {
-                 elapsed = Math.floor((now - task.lastSavedAt.toDate()) / 1000);
-            }
-            const newTotalSeconds = (task.totalSeconds || 0) + elapsed;
-            
-            // Adiciona a pausa ao array de pausas
-            const updatedPauses = task.pauses || [];
-            if(task.pauseStartTime) {
-                const pauseDuration = Math.round((now.getTime() - task.pauseStartTime.toDate().getTime()) / 1000);
-                updatedPauses.push({ duration: pauseDuration });
-            }
-
-            await setDoc(docRef, { 
-                totalSeconds: newTotalSeconds, 
-                isPaused: true, 
-                lastSavedAt: now,
-                pauseStartTime: now, // Registra o início da pausa
-                pauses: updatedPauses
-            }, { merge: true });
-            return newTotalSeconds;
-        }
-        
-        async function pauseAllActiveTasks() {
-            const batch = writeBatch(db);
-            const collRef = getActiveTasksCollectionRef();
-            const now = new Date();
-
-            activeTasks.forEach(task => {
-                if (!task.isPaused) {
-                    const docRef = doc(collRef, task.id);
-                    const elapsed = task.lastSavedAt ? Math.floor((now - task.lastSavedAt.toDate()) / 1000) : 0;
-                    const newTotalSeconds = (task.totalSeconds || 0) + elapsed;
-                    batch.update(docRef, { 
-                        totalSeconds: newTotalSeconds,
-                        isPaused: true, 
-                        lastSavedAt: now,
-                        pauseStartTime: now
-                    });
-                }
-            });
-            await batch.commit();
-        }
-
-        taskSlotsContainer.addEventListener('click', async (e) => {
-            const pauseBtn = e.target.closest('.pause-btn');
-            const resumeBtn = e.target.closest('.resume-btn');
-            const finishBtn = e.target.closest('.finish-btn');
-            const collRef = getActiveTasksCollectionRef();
-            
-            if (pauseBtn) {
-                const taskId = pauseBtn.dataset.id;
-                const taskToPause = activeTasks.find(t => t.id === taskId);
-                if(taskToPause) await updateAndPauseTask(taskToPause);
-            }
-            if (resumeBtn) {
-                const taskId = resumeBtn.dataset.id;
-                const taskToResume = activeTasks.find(t => t.id === taskId);
-                await pauseAllActiveTasks();
-
-                const updatedPauses = taskToResume.pauses || [];
-                if(taskToResume.pauseStartTime) {
-                    const pauseDuration = Math.round((new Date().getTime() - taskToResume.pauseStartTime.toDate().getTime()) / 1000);
-                    updatedPauses.push({ duration: pauseDuration });
-                }
-
-                await setDoc(doc(collRef, taskId), { 
-                    isPaused: false, 
-                    lastSavedAt: new Date(),
-                    pauses: updatedPauses,
-                    pauseStartTime: null
-                }, { merge: true });
-            }
-            if (finishBtn) {
-                const taskId = finishBtn.dataset.id;
-                let taskToFinish = activeTasks.find(t => t.id === taskId);
-                if (taskToFinish) {
-                    const finalTime = await updateAndPauseTask(taskToFinish);
-                    taskToFinish.totalSeconds = finalTime;
-                    await saveTimeEntry(taskToFinish);
-                    await deleteDoc(doc(collRef, taskId));
-                }
-            }
-        });
-        
-        function openNewTaskModal() {
-            newTaskNameInput.value = '';
-            newTaskTagSelect.value = '';
-            newTaskModal.classList.remove('hidden');
-        }
-        cancelNewTaskBtn.addEventListener('click', () => newTaskModal.classList.add('hidden'));
-        saveNewTaskBtn.addEventListener('click', async () => {
-            const taskName = newTaskNameInput.value.trim();
-            const taskTag = newTaskTagSelect.value;
-            if (!taskName || !taskTag) {
-                return alert('Por favor, preencha todos os campos.');
-            }
-            await pauseAllActiveTasks();
-            const collRef = getActiveTasksCollectionRef();
-            await addDoc(collRef, {
-                taskName, taskTag,
-                totalSeconds: 0,
-                pauses: [],
-                isPaused: false,
-                startTime: new Date(),
-                createdAt: new Date(),
-                lastSavedAt: new Date(),
-                pauseStartTime: null
-            });
-            newTaskModal.classList.add('hidden');
-        });
-
-        async function saveTimeEntry(taskData) {
-            const user = auth.currentUser;
-            if (!user || !taskData) return;
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const collectionPath = `artifacts/${appId}/users/${user.uid}/time_entries`;
-            try {
-                const now = new Date();
-                const totalPauseTime = (taskData.pauses || []).reduce((acc, p) => acc + p.duration, 0);
-                
-                await addDoc(collection(db, collectionPath), {
-                    taskName: taskData.taskName,
-                    taskTag: taskData.taskTag,
-                    timeSpent: taskData.totalSeconds,
-                    startTime: taskData.startTime.toDate(),
-                    endTime: now,
-                    createdAt: new Date(),
-                    userId: user.uid,
-                    userEmail: user.email,
-                    pauseCount: (taskData.pauses || []).length,
-                    totalPauseTime: totalPauseTime,
-                });
-            } catch (error) { console.error("Erro ao salvar o registro de tempo: ", error); }
-        }
-        
-        function formatTimeTimer(seconds) { 
-            const totalSecs = Number(seconds) || 0;
-            const mins = Math.floor(totalSecs / 60); 
-            const secs = Math.round(totalSecs % 60); 
-            return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`; 
-        }
-        
-        function formatTimeHoursMinutes(seconds) {
-            const totalSecs = Number(seconds) || 0;
-            const hours = Math.floor(totalSecs / 3600);
-            const minutes = Math.floor((totalSecs % 3600) / 60);
-            return `${hours}h ${minutes}m`;
-        }
-        
-        function loadHistory() {
-            if (unsubscribeFromHistory) unsubscribeFromHistory();
-            const user = auth.currentUser;
-            if (!user) return;
-            historyList.innerHTML = '<p class="text-gray-400 text-center">A carregar...</p>';
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/time_entries`));
-            unsubscribeFromHistory = onSnapshot(q, (querySnapshot) => {
-                 if (querySnapshot.empty) {
-                    historyList.innerHTML = '<p class="text-gray-400 text-center">Nenhuma atividade registada.</p>';
-                    allUserEntries = []; return;
-                 }
-                const entries = [];
-                querySnapshot.forEach(doc => entries.push(doc.data()));
-                entries.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
-                allUserEntries = entries;
-                historyList.innerHTML = '';
-                allUserEntries.slice(0, 5).forEach(entryData => {
-                    const li = document.createElement('div');
-                    li.className = 'bg-gray-50 p-3 rounded-lg text-sm';
-                    const startTimeStr = entryData.startTime?.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) || 'N/A';
-                    const endTimeStr = (entryData.endTime?.toDate() || entryData.createdAt.toDate()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                    const pauseStr = `${entryData.pauseCount || 0} pausas (${formatTimeHoursMinutes(entryData.totalPauseTime || 0)})`;
-                    li.innerHTML = `
-                        <div class="flex justify-between items-start">
-                            <div class="text-left"><p class="font-semibold text-gray-800">${entryData.taskName}</p><p class="text-xs text-gray-500">${entryData.taskTag}</p></div>
-                            <span class="font-bold text-lg text-blue-600">${formatTimeTimer(entryData.timeSpent)}</span>
+                        <p class="text-sm text-indigo-400">${task.tag}</p>
+                    </div>
+                    <div class="flex items-center gap-4">
+                        <div class="text-center">
+                            <p class="text-2xl md:text-3xl font-mono" id="timer-${task.id}">${formatTime(displayTime)}</p>
+                            <p class="text-xs text-gray-400">Tempo Ativo</p>
                         </div>
-                        <div class="text-xs text-gray-500 mt-2 flex items-center justify-between gap-4 border-t pt-2">
-                            <span>📅 ${(entryData.endTime?.toDate() || entryData.createdAt.toDate()).toLocaleDateString('pt-BR')}</span>
-                            <span>⏰ ${startTimeStr} - ${endTimeStr}</span>
-                            <span>⏸️ ${pauseStr}</span>
+                        <div class="text-center">
+                            <p class="text-2xl md:text-3xl font-mono">${task.pauseCount}</p>
+                            <p class="text-xs text-gray-400">Pausas</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        ${!isRunning ? `<button class="continue-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-play"></i></button>` : `<button class="pause-btn bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-pause"></i></button>`}
+                        <button class="finish-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-check"></i></button>
+                    </div>
+                `;
+                activeTasksContainer.appendChild(taskCard);
+
+                // Adicionar event listeners
+                if(isRunning) {
+                    taskCard.querySelector('.pause-btn').addEventListener('click', () => pauseTask(task));
+                    startTimer({ ...task, totalActiveTime: displayTime }); // Inicia o contador local
+                } else {
+                    taskCard.querySelector('.continue-btn').addEventListener('click', () => continueTask(task));
+                    pauseTimer(task.id);
+                }
+                taskCard.querySelector('.finish-btn').addEventListener('click', () => finishTask(task));
+            });
+        }
+        
+        // Renderizar histórico recente
+        function renderRecentHistory(entries) {
+            const container = document.getElementById('recent-history-container');
+            const noHistoryEl = document.getElementById('no-recent-history');
+
+            // Limpar apenas as entradas de histórico anteriores, não a mensagem de placeholder
+            container.querySelectorAll('.history-item').forEach(item => item.remove());
+
+            if (entries.length === 0) {
+                if(noHistoryEl) noHistoryEl.classList.remove('hidden');
+            } else {
+                if(noHistoryEl) noHistoryEl.classList.add('hidden');
+                entries.forEach(entry => {
+                    const entryDiv = document.createElement('div');
+                    // Adicionar uma classe para identificar os itens e facilitar a remoção
+                    entryDiv.className = 'history-item bg-gray-700 p-3 rounded-lg flex justify-between items-center';
+                    entryDiv.innerHTML = `
+                         <div>
+                            <p class="font-semibold">${entry.name}</p>
+                            <p class="text-xs text-indigo-400">${entry.tag}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
+                            <p class="text-xs text-gray-400">${new Date(entry.endTime.seconds * 1000).toLocaleDateString()}</p>
                         </div>
                     `;
-                    historyList.appendChild(li);
+                    container.appendChild(entryDiv);
                 });
-            });
+            }
         }
         
-        function loadDashboardData() {
-            dashboardLoading.classList.remove('hidden');
-            dashboardData.classList.add('hidden');
-            if (unsubscribeFromDashboard) unsubscribeFromDashboard();
-            const entriesRef = collectionGroup(db, 'time_entries');
-            const q = query(entriesRef);
-            unsubscribeFromDashboard = onSnapshot(q, (querySnapshot) => {
-                const entries = [];
-                querySnapshot.forEach(doc => entries.push(doc.data()));
-                allDashboardEntries = entries;
-                updateDashboard(entries);
-                dashboardLoading.classList.add('hidden');
-                dashboardData.classList.remove('hidden');
-            }, (error) => {
-                console.error("Erro ao carregar dados do dashboard:", error);
-                alert("Não foi possível carregar os dados. Verifique as regras de segurança.");
-                dashboardLoading.innerHTML = '<p class="text-red-500">Erro ao carregar dados.</p>';
-            });
-        }
-
-        function updateDashboard(entries) { 
-            const totalTime = entries.reduce((acc, entry) => acc + (entry.timeSpent || 0), 0); 
-            const totalTasks = entries.length; 
-            const uniqueUsers = new Set(entries.map(entry => entry.userEmail)).size; 
-            globalMetricsContainer.innerHTML = `<div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Tempo Total Registado</h3><p class="text-4xl font-bold text-blue-600 mt-2">${formatTimeHoursMinutes(totalTime)}</p></div><div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Total de Tarefas</h3><p class="text-4xl font-bold text-blue-600 mt-2">${totalTasks}</p></div><div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Colaboradores Ativos</h3><p class="text-4xl font-bold text-blue-600 mt-2">${uniqueUsers}</p></div>`; 
-            const timeByTag = entries.reduce((acc, entry) => { acc[entry.taskTag] = (acc[entry.taskTag] || 0) + (entry.timeSpent || 0); return acc; }, {}); 
-            const timeByUser = entries.reduce((acc, entry) => { const email = entry.userEmail.split('@')[0]; acc[email] = (acc[email] || 0) + (entry.timeSpent || 0); return acc; }, {}); 
-            renderTagsChart(timeByTag); 
-            renderUsersChart(timeByUser);
+        // =================================================================================
+        // 5. LÓGICA DOS DASHBOARDS E GRÁFICOS
+        // =================================================================================
+        let myPerfChart = null;
+        let teamCategoryChart = null;
+        let teamUserChart = null;
+        
+        async function loadMyPerformanceDashboard() {
+            const container = document.getElementById('my-performance-view');
             
-            activityLogBody.innerHTML = '';
-            const recentEntries = entries.sort((a,b) => b.createdAt.toDate() - a.createdAt.toDate()).slice(0, 15);
-            recentEntries.forEach(entry => {
-                const tr = document.createElement('tr');
-                tr.className = 'border-b border-gray-200 hover:bg-gray-50';
-                const startTimeStr = entry.startTime?.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) || 'N/A';
-                const endTimeStr = (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                tr.innerHTML = `
-                    <td class="px-4 py-3">${entry.userEmail.split('@')[0]}</td>
-                    <td class="px-4 py-3"><p class="font-semibold">${entry.taskName}</p><p class="text-gray-500">${entry.taskTag}</p></td>
-                    <td class="px-4 py-3">${(entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleDateString('pt-BR')}</td>
-                    <td class="px-4 py-3">${startTimeStr} - ${endTimeStr}</td>
-                    <td class="px-4 py-3 font-semibold">${formatTimeHoursMinutes(entry.timeSpent)}</td>
-                    <td class="px-4 py-3">${entry.pauseCount || 0} (${formatTimeHoursMinutes(entry.totalPauseTime || 0)})</td>
-                `;
-                activityLogBody.appendChild(tr);
-            });
-        }
-        
-        function destroyCharts(){ if(tagsChartInstance) tagsChartInstance.destroy(); if(usersChartInstance) usersChartInstance.destroy(); if(personalTagsChartInstance) personalTagsChartInstance.destroy(); }
-        function renderTagsChart(data) { const ctx = document.getElementById('tagsChart').getContext('2d'); if (tagsChartInstance) tagsChartInstance.destroy(); const sortedData = Object.entries(data).sort(([,a],[,b]) => b-a).slice(0, 10); tagsChartInstance = new Chart(ctx, { type: 'bar', data: { labels: sortedData.map(item => item[0]), datasets: [{ label: 'Tempo Gasto (horas)', data: sortedData.map(item => (item[1] / 3600).toFixed(2)), backgroundColor: 'rgba(59, 130, 246, 0.7)', borderColor: 'rgba(59, 130, 246, 1)', borderWidth: 1 }] }, options: { indexAxis: 'y', scales: { x: { beginAtZero: true, title: { display: true, text: 'Horas' } } }, responsive: true, maintainAspectRatio: true } }); }
-        function renderUsersChart(data) { const ctx = document.getElementById('usersChart').getContext('2d'); if (usersChartInstance) usersChartInstance.destroy(); const sortedData = Object.entries(data).sort(([,a],[,b]) => b-a).slice(0, 10); usersChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: sortedData.map(item => item[0]), datasets: [{ data: sortedData.map(item => (item[1] / 3600).toFixed(2)), backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#14B8A6', '#0EA5E9'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } } }); }
-        
-        function loadPersonalDashboardData() {
-            if (unsubscribeFromPersonalHistory) unsubscribeFromPersonalHistory();
-            const user = auth.currentUser;
-            if (!user) return;
-            personalDashboardLoading.classList.remove('hidden');
-            personalDashboardData.classList.add('hidden');
-            const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-            const q = query(collection(db, `artifacts/${appId}/users/${user.uid}/time_entries`));
-            unsubscribeFromPersonalHistory = onSnapshot(q, (querySnapshot) => {
-                const entries = [];
-                querySnapshot.forEach(doc => entries.push(doc.data()));
-                entries.sort((a, b) => b.createdAt.toDate() - a.createdAt.toDate());
-                allUserEntries = entries; // Atualiza o histórico pessoal para exportação
-                updatePersonalDashboard(entries);
-                personalDashboardLoading.classList.add('hidden');
-                personalDashboardData.classList.remove('hidden');
-            });
-        }
-        
-        function updatePersonalDashboard(entries) {
-            const totalTime = entries.reduce((acc, entry) => acc + (entry.timeSpent || 0), 0);
-            const totalTasks = entries.length;
-            const avgTime = totalTasks > 0 ? totalTime / totalTasks : 0;
+            container.innerHTML = `
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                    <div class="fas fa-spinner fa-spin text-4xl text-indigo-400"></div>
+                </div>`;
 
-            personalMetricsContainer.innerHTML = `
-                <div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Meu Tempo Total</h3><p class="text-4xl font-bold text-blue-600 mt-2">${formatTimeHoursMinutes(totalTime)}</p></div>
-                <div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Minhas Tarefas Concluídas</h3><p class="text-4xl font-bold text-blue-600 mt-2">${totalTasks}</p></div>
-                <div class="chart-container bg-white p-6 rounded-xl shadow-lg text-center"><h3 class="text-lg font-semibold text-gray-500">Tempo Médio por Tarefa</h3><p class="text-4xl font-bold text-blue-600 mt-2">${formatTimeHoursMinutes(avgTime)}</p></div>
-            `;
-            
-            const timeByTag = entries.reduce((acc, entry) => { acc[entry.taskTag] = (acc[entry.taskTag] || 0) + (entry.timeSpent || 0); return acc; }, {});
-            renderPersonalTagsChart(timeByTag);
+            if (!currentUser) {
+                container.innerHTML = '';
+                return;
+            };
 
-            personalHistoryList.innerHTML = '';
-            entries.forEach(entry => {
-                const li = document.createElement('div');
-                li.className = 'bg-gray-50 p-3 rounded-lg text-sm';
-                const startTimeStr = entry.startTime?.toDate().toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'}) || 'N/A';
-                const endTimeStr = (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
-                const pauseStr = `${entry.pauseCount || 0} pausas (${formatTimeHoursMinutes(entry.totalPauseTime || 0)})`;
-                li.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="text-left"><p class="font-semibold text-gray-800">${entry.taskName}</p><p class="text-xs text-gray-500">${entry.taskTag}</p></div>
-                        <span class="font-bold text-lg text-blue-600">${formatTimeTimer(entry.timeSpent)}</span>
+            try {
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
+                const querySnapshot = await getDocs(q);
+                const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+                const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
+                const totalTasks = entries.length;
+                const avgTime = totalTasks > 0 ? totalTime / totalTasks : 0;
+
+                const timeByCategory = entries.reduce((acc, curr) => {
+                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
+                    return acc;
+                }, {});
+
+                const chartLabels = Object.keys(timeByCategory);
+                const chartData = Object.values(timeByCategory);
+
+                const dashboardHTML = `
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total Registado</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(avgTime)}</p><p class="text-gray-400">Tempo Médio por Tarefa</p></div>
                     </div>
-                    <div class="text-xs text-gray-500 mt-2 flex items-center justify-between gap-4 border-t pt-2">
-                        <span>📅 ${(entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleDateString('pt-BR')}</span>
-                        <span>⏰ ${startTimeStr} - ${endTimeStr}</span>
-                        <span>⏸️ ${pauseStr}</span>
-                    </div>`;
-                personalHistoryList.appendChild(li);
-            });
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl" style="max-height: 400px; overflow-y: auto;"><h3 class="font-bold mb-4">Histórico Completo</h3>
+                            <table class="w-full text-left text-sm">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Data</th></tr></thead>
+                                <tbody>${entries.map(e => `<tr class="border-b border-gray-700"><td class="p-2">${e.name}<br><span class="text-indigo-400 text-xs">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleDateString()}</td></tr>`).join('')}</tbody>
+                            </table>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML = dashboardHTML;
+
+                const ctx = document.getElementById('my-perf-category-chart').getContext('2d');
+                if (myPerfChart) myPerfChart.destroy();
+                myPerfChart = new Chart(ctx, {
+                    type: 'doughnut',
+                    data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } }
+                });
+            } catch (error) {
+                console.error("Error loading My Performance Dashboard:", error);
+                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
+            }
+        }
+
+        async function loadTeamDashboard() {
+            const container = document.getElementById('team-dashboard-view');
+            
+            container.innerHTML = `
+                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
+                    <div class="fas fa-spinner fa-spin text-4xl text-indigo-400"></div>
+                </div>`;
+
+            try {
+                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(100));
+                const snapshot = await getDocs(timeEntriesQuery);
+                const allEntries = snapshot.docs.map(doc => doc.data());
+
+                const totalTime = allEntries.reduce((sum, entry) => sum + entry.totalActiveTime, 0);
+                const totalTasks = allEntries.length;
+                const activeUsers = new Set(allEntries.map(e => e.ownerId)).size;
+
+                const timeByCategory = allEntries.reduce((acc, curr) => {
+                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
+                    return acc;
+                }, {});
+
+                const timeByUser = allEntries.reduce((acc, curr) => {
+                    const email = curr.userEmail || 'Desconhecido';
+                    acc[email] = (acc[email] || 0) + curr.totalActiveTime;
+                    return acc;
+                }, {});
+                
+                const topUsers = Object.entries(timeByUser).sort((a, b) => b[1] - a[1]).slice(0, 10);
+
+                const dashboardHTML = `
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total da Equipe</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${activeUsers}</p><p class="text-gray-400">Colaboradores Ativos</p></div>
+                    </div>
+                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Tempo por Categoria (Equipe)</h3><canvas id="team-category-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Top 10 Colaboradores</h3><canvas id="team-user-chart"></canvas></div>
+                    </div>
+                     <div class="bg-gray-800 p-6 rounded-xl" style="max-height: 400px; overflow-y: auto;"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
+                         <table class="w-full text-left text-sm">
+                            <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Colaborador</th><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Data</th></tr></thead>
+                            <tbody>${allEntries.slice(0, 50).map(e => `<tr class="border-b border-gray-700"><td class="p-2">${e.userEmail}</td><td class="p-2">${e.name}<br><span class="text-indigo-400 text-xs">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleString()}</td></tr>`).join('')}</tbody>
+                        </table>
+                     </div>
+                `;
+                container.innerHTML = dashboardHTML;
+
+                const catCtx = document.getElementById('team-category-chart').getContext('2d');
+                if (teamCategoryChart) teamCategoryChart.destroy();
+                teamCategoryChart = new Chart(catCtx, {
+                    type: 'bar',
+                    data: { labels: Object.keys(timeByCategory), datasets: [{ label: 'Tempo', data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] },
+                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } }
+                });
+                
+                const userCtx = document.getElementById('team-user-chart').getContext('2d');
+                if (teamUserChart) teamUserChart.destroy();
+                teamUserChart = new Chart(userCtx, {
+                    type: 'bar',
+                    data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] },
+                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } }
+                });
+            } catch (error) {
+                console.error("Error loading Team Dashboard:", error);
+                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipa.</p>`;
+                if (error.code === 'failed-precondition') {
+                    console.error("Esta falha geralmente indica a falta de um índice no Firestore. Verifique a consola de erros do seu navegador; o Firebase deve fornecer um link direto para criar o índice necessário.");
+                }
+            }
+        }
+
+        // =================================================================================
+        // 6. LÓGICA DO PERFIL E MODAIS
+        // =================================================================================
+        const profileModal = document.getElementById('profile-modal');
+        let profileChart = null;
+        
+        // Abrir/Fechar modais
+        document.getElementById('profile-button').addEventListener('click', () => {
+             profileModal.classList.remove('hidden');
+             loadProfileDashboard();
+        });
+        document.getElementById('close-profile-modal').addEventListener('click', () => profileModal.classList.add('hidden'));
+
+        async function loadUserProfile() {
+            if(!currentUser) return;
+            const profileRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/profile/settings`);
+            const docSnap = await getDoc(profileRef);
+            if (!docSnap.exists()) {
+                // Se o perfil não existir (ex: utilizadores antigos), cria um
+                 await setDoc(profileRef, { email: currentUser.email });
+            }
+            updateProfileModal();
         }
         
-        function renderPersonalTagsChart(data) {
-            const ctx = document.getElementById('personalTagsChart').getContext('2d');
-            if (personalTagsChartInstance) personalTagsChartInstance.destroy();
-            const sortedData = Object.entries(data).sort(([,a],[,b]) => b-a).slice(0, 10);
-            personalTagsChartInstance = new Chart(ctx, { type: 'doughnut', data: { labels: sortedData.map(item => item[0]), datasets: [{ data: sortedData.map(item => (item[1] / 3600).toFixed(2)), backgroundColor: ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#6366F1', '#F97316', '#14B8A6', '#0EA5E9'], hoverOffset: 4 }] }, options: { responsive: true, maintainAspectRatio: true, plugins: { legend: { position: 'top' } } } });
+        function updateProfileModal() {
+            document.getElementById('profile-email').textContent = currentUser.email;
+        }
+        
+        async function loadProfileDashboard() {
+            const container = document.getElementById('profile-dashboard-container');
+            if (!container) {
+                console.error("Contentor do dashboard do perfil não encontrado!");
+                return;
+            }
+
+            // Mostrar o loader dentro do contentor
+            container.innerHTML = `
+                <div class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
+                    <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
+                </div>
+            `;
+
+            try {
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const sevenDaysAgoTimestamp = Timestamp.fromDate(sevenDaysAgo);
+
+                const q = query(
+                    collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`),
+                    where('endTime', '>=', sevenDaysAgoTimestamp)
+                );
+
+                const snapshot = await getDocs(q);
+                const entries = snapshot.docs.map(doc => doc.data());
+
+                const totalTime = entries.reduce((sum, e) => sum + e.totalActiveTime, 0);
+
+                const timeByCategory = entries.reduce((acc, curr) => {
+                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
+                    return acc;
+                }, {});
+
+                const contentHTML = `
+                    <p class="text-center text-3xl font-bold text-indigo-400 mb-4">${formatTime(totalTime)}</p>
+                    <div class="h-64">
+                         <canvas id="profile-category-chart"></canvas>
+                    </div>
+                `;
+                container.innerHTML = contentHTML;
+
+                const ctx = document.getElementById('profile-category-chart').getContext('2d');
+                if (profileChart) profileChart.destroy();
+                profileChart = new Chart(ctx, {
+                    type: 'pie',
+                    data: {
+                        labels: Object.keys(timeByCategory),
+                        datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
+                });
+            } catch(error) {
+                console.error("Erro ao carregar o dashboard do perfil:", error);
+                container.innerHTML = `<div class="text-red-400 p-4">Ocorreu um erro ao carregar o seu desempenho.</div>`;
+            }
         }
 
-        function exportGlobalData(format) { const user = auth.currentUser; if (!user || allDashboardEntries.length === 0) return alert('Não há dados para exportar.'); const headers = ['Colaborador', 'Categoria', 'Tarefa', 'Data', 'Início', 'Fim', 'Tempo Ativo', 'Nº Pausas', 'Tempo Pausado']; const rows = allDashboardEntries.map(entry => { const conclusionDateTime = entry.endTime?.toDate() || entry.createdAt.toDate(); const startDateTime = entry.startTime?.toDate(); return [ entry.userEmail, entry.taskTag, entry.taskName, conclusionDateTime.toLocaleDateString('pt-BR'), startDateTime ? startDateTime.toLocaleTimeString('pt-BR') : 'N/A', conclusionDateTime.toLocaleTimeString('pt-BR'), formatTimeHoursMinutes(entry.timeSpent), entry.pauseCount || 0, formatTimeHoursMinutes(entry.totalPauseTime || 0) ]; }); if (format === 'pdf') { const { jsPDF } = window.jspdf; const doc = new jsPDF('landscape'); doc.setFontSize(18); doc.text('Relatório Global de Produtividade - Timer Evereste', 14, 22); doc.setFontSize(11); doc.setTextColor(100); doc.text(`Data de Emissão: ${new Date().toLocaleDateString('pt-BR')}`, 14, 30); doc.autoTable({ startY: 40, head: [headers], body: rows, theme: 'striped', headStyles: { fillColor: [34, 119, 215] } }); doc.save(`relatorio_global_evereste_${new Date().toISOString().slice(0,10)}.pdf`); } else if (format === 'csv') { let csvContent = "data:text/csv;charset=utf-8," + headers.join(",") + "\n" + rows.map(e => `"${e.join('","')}"`).join("\n"); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `relatorio_global_evereste_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); } }
-        exportGlobalPdfBtn.addEventListener('click', () => exportGlobalData('pdf'));
-        exportGlobalCsvBtn.addEventListener('click', () => exportGlobalData('csv'));
-        exportPdfBtnPersonal.addEventListener('click', () => { const user = auth.currentUser; if (!user || allUserEntries.length === 0) return alert('Não há dados para exportar.'); const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.setFontSize(18); doc.text('Relatório de Atividades', 14, 22); doc.setFontSize(11); doc.setTextColor(100); doc.text(`Usuário: ${user.email}`, 14, 30); const tableData = allUserEntries.map(entry => { return [entry.taskName, entry.taskTag, (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleDateString('pt-BR'), entry.startTime?.toDate().toLocaleTimeString('pt-BR') || 'N/A', (entry.endTime?.toDate() || entry.createdAt.toDate()).toLocaleTimeString('pt-BR'), formatTimeTimer(entry.timeSpent), entry.pauseCount || 0, formatTimeHoursMinutes(entry.totalPauseTime || 0)]; }); doc.autoTable({ startY: 40, head: [['Tarefa', 'Categoria', 'Data', 'Início', 'Fim', 'Tempo Ativo', 'Nº Pausas', 'Tempo Pausado']], body: tableData, theme: 'striped', headStyles: { fillColor: [22, 163, 74] } }); doc.save(`relatorio_${user.email}_${new Date().toISOString().slice(0,10)}.pdf`);});
+        // =================================================================================
+        // 7. UTILITÁRIOS E GESTÃO DE ESTADO
+        // =================================================================================
+        
+        // Gestão da navegação de vistas
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const viewId = button.dataset.view;
+                
+                // Mudar vista
+                document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
+                document.getElementById(viewId).classList.remove('hidden');
+                
+                // Mudar estilo do botão
+                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-gray-700'));
+                button.classList.replace('bg-gray-700', 'bg-indigo-600');
 
+                // Carregar dados para a vista
+                if (viewId === 'my-performance-view') loadMyPerformanceDashboard();
+                if (viewId === 'team-dashboard-view') loadTeamDashboard();
+            });
+        });
+
+        // Listeners do Firestore
+        function setupListeners() {
+            if (!currentUser) return;
+            cleanupListeners(); // Garantir que não há listeners duplicados
+
+            // Listener para tarefas ativas
+            const activeTasksQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`));
+            unsubscribeActiveTasks = onSnapshot(activeTasksQuery, (snapshot) => {
+                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                // Limpar todos os intervalos antigos antes de renderizar
+                Object.values(timerIntervals).forEach(clearInterval);
+                timerIntervals = {};
+                renderActiveTasks(tasks);
+            });
+            
+            // Listener para histórico recente
+            const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
+            unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
+                 const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                 renderRecentHistory(entries);
+            }, (error) => {
+                console.error("Falha ao carregar o histórico recente: ", error);
+                if (error.code === 'failed-precondition') {
+                    console.error("Esta falha geralmente indica a falta de um índice no Firestore. Verifique a consola de erros do seu navegador; o Firebase deve fornecer um link direto para criar o índice necessário.");
+                }
+            });
+        }
+
+        // Limpar listeners ao fazer logout
+        function cleanupListeners() {
+            if (unsubscribeActiveTasks) unsubscribeActiveTasks();
+            if (unsubscribeRecentHistory) unsubscribeRecentHistory();
+            Object.values(timerIntervals).forEach(clearInterval);
+            timerIntervals = {};
+        }
+        
+        function clearUI() {
+            activeTasksContainer.innerHTML = '';
+            document.getElementById('recent-history-container').innerHTML = `<p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>`;
+            document.getElementById('my-performance-view').innerHTML = '';
+            document.getElementById('team-dashboard-view').innerHTML = '';
+            // Resetar navegação
+             document.querySelector('[data-view="timer-view"]').click();
+        }
+
+        // Função para formatar segundos em HH:MM:SS
+        function formatTime(totalSeconds) {
+            if(isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
+            const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+        
+        // Função para gerar cores para os gráficos
+        function generateColors(numColors) {
+            const colors = [
+                '#4f46e5', '#7c3aed', '#db2777', '#f97316', 
+                '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'
+            ];
+            let result = [];
+            for (let i = 0; i < numColors; i++) {
+                result.push(colors[i % colors.length]);
+            }
+            return result;
+        }
     </script>
 </body>
 </html>
-
