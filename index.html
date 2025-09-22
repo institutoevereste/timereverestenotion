@@ -1015,8 +1015,8 @@
                 // Adiciona a mensagem do utilizador ao histórico
                 chatHistory.push({ role: "user", parts: [{ text: message }] });
 
-                // 1. Obter contexto das tarefas recentes
-                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(15));
+                // 1. Obter contexto de TODAS as tarefas do utilizador
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
                 const snapshot = await getDocs(q);
                 const entries = snapshot.docs.map(doc => {
                     const data = doc.data();
@@ -1071,4 +1071,5 @@
     </script>
 </body>
 </html>
+
 
