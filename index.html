@@ -32,6 +32,10 @@
         .fade-in {
             animation: fadeIn 0.5s ease-in-out;
         }
+        
+        .chat-bubble {
+            max-width: 80%;
+        }
 
         @keyframes fadeIn {
             from {
@@ -43,6 +47,13 @@
                 opacity: 1;
                 transform: translateY(0);
             }
+        }
+        .tag-color {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: inline-block;
         }
     </style>
 </head>
@@ -59,7 +70,12 @@
             </div>
             <form id="auth-form" class="space-y-4">
                 <input type="email" id="email" placeholder="E-mail" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
-                <input type="password" id="password" placeholder="Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                <div class="relative">
+                    <input type="password" id="password" placeholder="Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
+                    <button type="button" id="toggle-password" class="absolute inset-y-0 right-0 px-4 text-gray-400 hover:text-white">
+                        <i class="fas fa-eye"></i>
+                    </button>
+                </div>
                 <p id="auth-error" class="text-red-400 text-sm h-4"></p>
                 <button type="submit" id="auth-button" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition-transform transform hover:scale-105">Entrar</button>
             </form>
@@ -102,63 +118,113 @@
         <main id="main-content" class="p-4 md:p-6">
             <!-- Vista do Timer -->
             <div id="timer-view" class="view-content fade-in space-y-6">
-                <!-- Criação de Tarefa -->
-                <div id="task-creation-container" class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                    <h2 class="text-lg font-bold mb-3">Iniciar nova tarefa</h2>
-                    <form id="new-task-form" class="flex flex-col md:flex-row gap-3">
-                        <input type="text" id="task-name" placeholder="Nome da tarefa" class="flex-grow px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                        <select id="task-tag" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                           <!-- Options will be populated by JS -->
-                        </select>
-                        <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Iniciar</button>
-                    </form>
-                     <p id="task-limit-error" class="text-red-400 text-sm mt-2 h-4"></p>
-                </div>
-                <!-- Tarefas Ativas -->
-                <div>
-                    <h2 class="text-xl font-bold mb-4">Tarefas Ativas</h2>
-                    <div id="active-tasks-container" class="space-y-4">
-                        <!-- Tasks will be rendered here -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Criação de Tarefa -->
+                        <div id="task-creation-container" class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                            <h2 class="text-lg font-bold mb-3">Iniciar nova tarefa</h2>
+                            <form id="new-task-form" class="flex flex-col md:flex-row gap-3">
+                                <input type="text" id="task-name" placeholder="Nome da tarefa" class="flex-grow px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                <select id="task-tag" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                   <!-- Options will be populated by JS -->
+                                </select>
+                                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Iniciar</button>
+                            </form>
+                             <p id="task-limit-error" class="text-red-400 text-sm mt-2 h-4"></p>
+                        </div>
+                        <!-- Tarefas Ativas -->
+                        <div>
+                            <h2 class="text-xl font-bold mb-4">Tarefas Ativas</h2>
+                            <div id="active-tasks-container" class="space-y-4">
+                                <!-- Tasks will be rendered here -->
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Pomodoro e Ajuda -->
+                    <div class="space-y-6">
+                        <!-- Pomodoro -->
+                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                            <h2 class="text-lg font-bold mb-3">Sessão Pomodoro</h2>
+                            <p id="pomodoro-timer" class="text-5xl font-mono font-bold text-indigo-400">25:00</p>
+                            <div class="flex justify-center gap-3 mt-4">
+                                <button id="pomodoro-start" class="bg-green-600 hover:bg-green-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-play"></i></button>
+                                <button id="pomodoro-pause" class="bg-yellow-500 hover:bg-yellow-600 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-pause"></i></button>
+                                <button id="pomodoro-reset" class="bg-red-600 hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-undo"></i></button>
+                            </div>
+                        </div>
+                        <!-- Central de Ajuda -->
+                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                             <h2 class="text-lg font-bold mb-3">Central de Ajuda</h2>
+                             <div class="flex items-center gap-4">
+                                <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Timer" class="w-20 h-20">
+                                <p class="text-sm text-gray-300">"O tempo é o recurso mais valioso. Use-o com sabedoria para escalar as suas próprias montanhas."</p>
+                             </div>
+                             <button id="open-timer-help" class="mt-4 w-full bg-indigo-600/50 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition">Dicas de Foco</button>
+                        </div>
                     </div>
                 </div>
-                <!-- Histórico Recente -->
+                 <!-- Histórico Recente -->
                 <div>
                     <h2 class="text-xl font-bold mb-4">Últimas 5 Tarefas Finalizadas</h2>
                     <div id="recent-history-container" class="bg-gray-800 p-4 rounded-xl shadow-lg space-y-3">
-                        <!-- Recent history items will be rendered here -->
                          <p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>
                     </div>
                 </div>
             </div>
 
             <!-- Vista Meu Desempenho -->
-            <div id="my-performance-view" class="view-content fade-in hidden">
-                <!-- Content will be injected by JS -->
-            </div>
+            <div id="my-performance-view" class="view-content fade-in hidden"></div>
 
-            <!-- Vista Dashboard da Equipa -->
-            <div id="team-dashboard-view" class="view-content fade-in hidden">
-                <!-- Content will be injected by JS -->
-            </div>
+            <!-- Vista Dashboard da Equipe -->
+            <div id="team-dashboard-view" class="view-content fade-in hidden"></div>
         </main>
+
+        <!-- Botão Flutuante do Chatbot -->
+        <button id="open-chat-btn" class="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 overflow-hidden p-1">
+            <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Abrir Chat do Yeti" class="w-full h-full object-cover rounded-full">
+        </button>
     </div>
 
     <!-- Modal do Perfil -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
-            <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white">
-                <i class="fas fa-times fa-lg"></i>
-            </button>
+            <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
             <h2 class="text-2xl font-bold mb-2">Meu Perfil</h2>
             <p id="profile-email" class="text-indigo-400 mb-6"></p>
-
             <div>
                  <h3 class="text-lg font-semibold mb-4">Desempenho nos Últimos 7 Dias</h3>
-                 <div id="profile-dashboard-container" class="relative min-h-[280px]">
-                    <!-- O conteúdo do dashboard do perfil será injetado aqui pelo JavaScript -->
-                 </div>
+                 <div id="profile-dashboard-container" class="relative min-h-[280px]"></div>
             </div>
         </div>
+    </div>
+    
+    <!-- Modal da Central de Ajuda -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
+            <button id="close-help-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
+            <div id="help-modal-content"></div>
+        </div>
+    </div>
+
+    <!-- Modal do Chatbot -->
+    <div id="chat-modal" class="hidden fixed bottom-24 right-6 w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col z-50 fade-in">
+        <div class="flex items-center p-4 bg-gray-900 rounded-t-2xl">
+            <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-10 h-10 rounded-full mr-3">
+            <div>
+                <h3 class="font-bold">Yeti Assistente</h3>
+                <p class="text-xs text-green-400">Online</p>
+            </div>
+            <button id="close-chat-btn" class="ml-auto text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        </div>
+        <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4">
+            <!-- Messages will be injected here -->
+        </div>
+        <form id="chat-form" class="p-4 border-t border-gray-700">
+            <div class="flex items-center bg-gray-700 rounded-lg">
+                <input type="text" id="chat-input" placeholder="Pergunte algo..." class="w-full bg-transparent px-4 py-2 focus:outline-none">
+                <button type="submit" class="p-2 text-indigo-400 hover:text-indigo-300"><i class="fas fa-paper-plane"></i></button>
+            </div>
+        </form>
     </div>
     
     <script type="module">
@@ -198,7 +264,7 @@
             projectId: "timerevereste",
             storageBucket: "timerevereste.appspot.com",
             messagingSenderId: "469617910016",
-            appId: "1:469617910016:web:9076d1bb4905667bb353e5",
+            appId: "1:469617910016:web:9076dbb4905667bb353e5",
             measurementId: "G-K1YGJ0NHCL"
         };
         
@@ -214,24 +280,138 @@
         let timerIntervals = {};
         let unsubscribeActiveTasks = null;
         let unsubscribeRecentHistory = null;
+        let chatHistory = [];
+        let currentUserName = '';
         
         const TAG_OPTIONS = [
-            "Gestão de Projetos", "Análise de Dados", "Desenvolvimento", 
-            "Design UX/UI", "Marketing", "Reuniões", "Suporte ao Cliente", 
-            "Planeamento Estratégico", "Recursos Humanos", "Outros"
+            { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' },
+            { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' },
+            { name: 'Web Design', color: 'bg-green-200 text-green-800' },
+            { name: 'UX', color: 'bg-green-200 text-green-800' },
+            { name: 'UI', color: 'bg-green-200 text-green-800' },
+            { name: 'App', color: 'bg-green-200 text-green-800' },
+            { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' },
+            { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' },
+            { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Evento', color: 'bg-purple-200 text-purple-800' },
+            { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' },
+            { name: 'Portal', color: 'bg-pink-200 text-pink-800' },
+            { name: 'E-mail', color: 'bg-pink-200 text-pink-800' },
+            { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Instagram', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Youtube', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Flickr', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Facebook', color: 'bg-pink-200 text-pink-800' },
+            { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Impressão', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' },
+            { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' },
+            { name: 'Documento', color: 'bg-red-200 text-red-800' },
+            { name: 'Comunicação', color: 'bg-red-200 text-red-800' },
+            { name: 'Agendamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Reunião', color: 'bg-red-200 text-red-800' },
+            { name: 'Planejamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Treinamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Pesquisa', color: 'bg-red-200 text-red-800' },
+            { name: 'Notícia', color: 'bg-red-200 text-red-800' },
+            { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' },
+            { name: 'Apresentação', color: 'bg-red-200 text-red-800' },
+            { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Social Media', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' },
         ];
+
 
         // Popular as tags
         const taskTagSelect = document.getElementById('task-tag');
         TAG_OPTIONS.forEach(tag => {
             const option = document.createElement('option');
-            option.value = tag;
-            option.textContent = tag;
+            option.value = tag.name;
+            option.textContent = tag.name;
             taskTagSelect.appendChild(option);
         });
         
+        function getTagColor(tagName) {
+            const tag = TAG_OPTIONS.find(t => t.name === tagName);
+            return tag ? tag.color : 'bg-gray-500 text-gray-100';
+        }
+
         // =================================================================================
-        // 3. LÓGICA DE AUTENTICAÇÃO
+        // 3. UTILITÁRIOS E GESTÃO DE ESTADO
+        // =================================================================================
+        document.querySelectorAll('.nav-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const viewId = button.dataset.view;
+                document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
+                document.getElementById(viewId).classList.remove('hidden');
+                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-gray-700'));
+                button.classList.replace('bg-gray-700', 'bg-indigo-600');
+                if (viewId === 'my-performance-view') loadMyPerformanceDashboard();
+                if (viewId === 'team-dashboard-view') loadTeamDashboard();
+            });
+        });
+
+        function setupListeners() {
+            if (!currentUser) return;
+            cleanupListeners();
+            const activeTasksQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`));
+            unsubscribeActiveTasks = onSnapshot(activeTasksQuery, (snapshot) => {
+                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                Object.values(timerIntervals).forEach(clearInterval);
+                timerIntervals = {};
+                renderActiveTasks(tasks);
+            });
+            const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
+            unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
+                 renderRecentHistory(snapshot.docs.map(doc => doc.data()));
+            }, (error) => {
+                console.error("Falha ao carregar o histórico recente: ", error);
+                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Verifique a consola de erros.");
+            });
+        }
+
+        function cleanupListeners() {
+            if (unsubscribeActiveTasks) unsubscribeActiveTasks();
+            if (unsubscribeRecentHistory) unsubscribeRecentHistory();
+            Object.values(timerIntervals).forEach(clearInterval);
+            timerIntervals = {};
+        }
+        
+        function clearUI() {
+            activeTasksContainer.innerHTML = '';
+            document.getElementById('recent-history-container').innerHTML = `<p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>`;
+            document.getElementById('my-performance-view').innerHTML = '';
+            document.getElementById('team-dashboard-view').innerHTML = '';
+            document.querySelector('[data-view="timer-view"]').click();
+        }
+
+        function formatTime(totalSeconds) {
+            if(isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
+            const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        
+        function generateColors(numColors) {
+            const colors = ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'];
+            return Array.from({length: numColors}, (_, i) => colors[i % colors.length]);
+        }
+        
+        // =================================================================================
+        // 4. LÓGICA DE AUTENTICAÇÃO
         // =================================================================================
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
@@ -241,10 +421,24 @@
         const authTitle = document.getElementById('auth-title');
         const authPromptText = document.getElementById('auth-prompt-text');
         const authButton = document.getElementById('auth-button');
+        const togglePassword = document.getElementById('toggle-password');
+
+        togglePassword.addEventListener('click', () => {
+            const passwordInput = document.getElementById('password');
+            const icon = togglePassword.querySelector('i');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        });
 
         let isLoginMode = true;
 
-        // Alternar entre Login e Registo
         toggleAuthModeLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
@@ -264,7 +458,6 @@
             }
         });
 
-        // Submeter formulário de autenticação
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
@@ -276,11 +469,9 @@
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    // Criar perfil de utilizador inicial no Firestore
                     const userProfileRef = doc(db, `artifacts/default-app-id/users/${userCredential.user.uid}/profile/settings`);
                     await setDoc(userProfileRef, { email: userCredential.user.email });
                 }
-                // onAuthStateChanged irá tratar da transição do UI
             } catch (error) {
                 console.error("Authentication error:", error);
                 handleAuthError(error);
@@ -289,56 +480,62 @@
 
         function handleAuthError(error) {
              switch (error.code) {
-                case 'auth/invalid-email':
-                    authError.textContent = 'Formato de e-mail inválido.';
-                    break;
+                case 'auth/invalid-email': authError.textContent = 'Formato de e-mail inválido.'; break;
                 case 'auth/user-not-found':
                 case 'auth/wrong-password':
-                     authError.textContent = 'E-mail ou senha incorretos.';
+                case 'auth/invalid-credential':
+                    authError.textContent = 'E-mail ou senha incorretos.'; 
                     break;
-                case 'auth/email-already-in-use':
-                     authError.textContent = 'Este e-mail já está a ser utilizado.';
-                    break;
-                case 'auth/weak-password':
-                     authError.textContent = 'A senha deve ter pelo menos 6 caracteres.';
-                    break;
-                default:
-                     authError.textContent = 'Ocorreu um erro. Tente novamente.';
-                    break;
+                case 'auth/email-already-in-use': authError.textContent = 'Este e-mail já está a ser utilizado.'; break;
+                case 'auth/weak-password': authError.textContent = 'A senha deve ter pelo menos 6 caracteres.'; break;
+                default: authError.textContent = 'Ocorreu um erro. Tente novamente.'; break;
             }
         }
 
-
-        // Observador do estado de autenticação
         onAuthStateChanged(auth, (user) => {
             if (user) {
                 currentUser = user;
+
+                // Extrai e armazena o primeiro nome do utilizador a partir do e-mail
+                if (user.email) {
+                    const namePart = user.email.split('@')[0];
+                    const firstName = namePart.split('.')[0].split('-')[0];
+                    currentUserName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                } else {
+                    currentUserName = 'Usuário'; // Fallback
+                }
+
                 authContainer.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 loadUserProfile();
                 setupListeners();
+                
+                // Reinicia o histórico e envia a mensagem de boas-vindas personalizada
+                chatHistory = [];
+                const welcomeMessage = `Olá, <b>${currentUserName}</b>! Eu sou o Yeti, seu assistente de produtividade com IA. Faça qualquer pergunta sobre suas tarefas ou sobre como usar o app.`;
+                addBotMessage(welcomeMessage);
+                chatHistory.push({ role: "model", parts: [{ text: welcomeMessage }] });
+
             } else {
                 currentUser = null;
+                currentUserName = ''; // Limpa o nome no logout
                 authContainer.classList.remove('hidden');
                 appContainer.classList.add('hidden');
                 cleanupListeners();
                 clearUI();
+                chatHistory = []; // Limpa o histórico no logout
             }
         });
 
-        // Logout
-        document.getElementById('logout-button').addEventListener('click', async () => {
-            await signOut(auth);
-        });
+        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
 
         // =================================================================================
-        // 4. LÓGICA DO TIMER E GESTÃO DE TAREFAS
+        // 5. LÓGICA DO TIMER E GESTÃO DE TAREFAS
         // =================================================================================
         const newTaskForm = document.getElementById('new-task-form');
         const taskLimitError = document.getElementById('task-limit-error');
         const activeTasksContainer = document.getElementById('active-tasks-container');
         
-        // Iniciar nova tarefa
         newTaskForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (activeTasks.length >= 3) {
@@ -350,38 +547,21 @@
             const taskName = document.getElementById('task-name').value;
             const taskTag = document.getElementById('task-tag').value;
 
-            const newTask = {
-                name: taskName,
-                tag: taskTag,
-                ownerId: currentUser.uid,
-                status: 'paused',
-                startTime: Timestamp.now(),
-                lastStartTime: null,
-                totalActiveTime: 0,
-                totalPausedTime: 0,
-                pauseCount: 0,
-                lastPauseTime: Timestamp.now(),
-            };
+            const newTask = { name: taskName, tag: taskTag, ownerId: currentUser.uid, status: 'paused', startTime: Timestamp.now(), lastStartTime: null, totalActiveTime: 0, totalPausedTime: 0, pauseCount: 0, lastPauseTime: Timestamp.now() };
 
             try {
                 const collectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`);
                 await addDoc(collectionRef, newTask);
                 newTaskForm.reset();
-            } catch (error) {
-                console.error("Error adding new task:", error);
-            }
+            } catch (error) { console.error("Error adding new task:", error); }
         });
 
-        // Iniciar ou Pausar um timer
         function startTimer(task) {
-            if (timerIntervals[task.id]) return; // Já está a correr
-
+            if (timerIntervals[task.id]) return;
             timerIntervals[task.id] = setInterval(() => {
                 task.totalActiveTime++;
                 const timerElement = document.getElementById(`timer-${task.id}`);
-                if (timerElement) {
-                    timerElement.textContent = formatTime(task.totalActiveTime);
-                }
+                if (timerElement) timerElement.textContent = formatTime(task.totalActiveTime);
             }, 1000);
         }
 
@@ -390,135 +570,80 @@
             delete timerIntervals[taskId];
         }
 
-        // Atualizar o estado da tarefa no Firestore
         async function updateTaskInFirestore(taskId, updates) {
             if (!currentUser) return;
             const taskRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskId);
             await setDoc(taskRef, updates, { merge: true });
         }
         
-        // Continuar uma tarefa
         async function continueTask(taskToContinue) {
-             // Pausar todas as outras tarefas ativas
-            for (const task of activeTasks) {
-                if (task.id !== taskToContinue.id && task.status === 'running') {
-                    await pauseTask(task);
-                }
-            }
+            await Promise.all(activeTasks.map(task => {
+                if (task.id !== taskToContinue.id && task.status === 'running') return pauseTask(task);
+            }));
 
             const now = Timestamp.now();
             const pauseDuration = now.seconds - taskToContinue.lastPauseTime.seconds;
-            
-            const updates = {
-                status: 'running',
-                lastStartTime: now,
-                totalPausedTime: taskToContinue.totalPausedTime + pauseDuration
-            };
-            await updateTaskInFirestore(taskToContinue.id, updates);
+            await updateTaskInFirestore(taskToContinue.id, { status: 'running', lastStartTime: now, totalPausedTime: taskToContinue.totalPausedTime + pauseDuration });
         }
         
-        // Pausar uma tarefa
         async function pauseTask(taskToPause) {
             const now = Timestamp.now();
             const activeDuration = now.seconds - taskToPause.lastStartTime.seconds;
-
-            const updates = {
-                status: 'paused',
-                lastPauseTime: now,
-                totalActiveTime: taskToPause.totalActiveTime + activeDuration,
-                pauseCount: taskToPause.pauseCount + 1
-            };
-             await updateTaskInFirestore(taskToPause.id, updates);
+            await updateTaskInFirestore(taskToPause.id, { status: 'paused', lastPauseTime: now, totalActiveTime: taskToPause.totalActiveTime + activeDuration, pauseCount: taskToPause.pauseCount + 1 });
         }
 
-        // Finalizar uma tarefa
         async function finishTask(taskToFinish) {
-            pauseTimer(taskToFinish.id); // Para o intervalo local
+            pauseTimer(taskToFinish.id);
             let finalActiveTime = taskToFinish.totalActiveTime;
-
             if (taskToFinish.status === 'running') {
                  const now = Timestamp.now();
-                 const activeDuration = now.seconds - taskToFinish.lastStartTime.seconds;
-                 finalActiveTime += activeDuration;
+                 finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
             }
-
-            const finishedTask = {
-                name: taskToFinish.name,
-                tag: taskToFinish.tag,
-                ownerId: taskToFinish.ownerId,
-                userEmail: currentUser.email, // Adicionar para o dashboard da equipa
-                startTime: taskToFinish.startTime,
-                endTime: Timestamp.now(),
-                totalActiveTime: finalActiveTime,
-                totalPausedTime: taskToFinish.totalPausedTime,
-                pauseCount: taskToFinish.pauseCount
-            };
+            const finishedTask = { ...taskToFinish, userEmail: currentUser.email, endTime: Timestamp.now(), totalActiveTime: finalActiveTime };
+            delete finishedTask.status;
+            delete finishedTask.lastStartTime;
+            delete finishedTask.lastPauseTime;
             
             try {
-                // Adicionar ao histórico (time_entries)
-                const historyCollectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`);
-                await addDoc(historyCollectionRef, finishedTask);
-
-                // Remover da lista de tarefas ativas
-                const taskRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskToFinish.id);
-                await deleteDoc(taskRef);
-
-            } catch(error) {
-                console.error("Error finishing task: ", error);
-            }
+                await addDoc(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), finishedTask);
+                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskToFinish.id));
+            } catch(error) { console.error("Error finishing task: ", error); }
         }
         
-        // Renderizar tarefas ativas
         function renderActiveTasks(tasks) {
-            activeTasks = tasks; // Atualizar a variável global
-            activeTasksContainer.innerHTML = '';
-            if (tasks.length === 0) {
-                 activeTasksContainer.innerHTML = `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>`;
-                 return;
-            }
+            activeTasks = tasks;
+            activeTasksContainer.innerHTML = tasks.length === 0 ? `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>` : '';
             
             tasks.forEach(task => {
                 const isRunning = task.status === 'running';
-
-                // Calcular tempo decorrido em tempo real
                 let displayTime = task.totalActiveTime;
-                if(isRunning && task.lastStartTime) {
-                    const nowInSeconds = Math.floor(Date.now() / 1000);
-                    displayTime += (nowInSeconds - task.lastStartTime.seconds);
-                }
-
+                if(isRunning && task.lastStartTime) displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
+                const tagColor = getTagColor(task.tag);
+                
                 const taskCard = document.createElement('div');
                 taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'}`;
-                taskCard.id = `task-${task.id}`;
                 taskCard.innerHTML = `
                     <div class="flex-grow text-center md:text-left">
                         <div class="flex items-center gap-3">
                              ${isRunning ? '<span class="text-xs font-bold uppercase bg-green-500 text-gray-900 px-2 py-1 rounded">ATIVA</span>' : ''}
                             <h3 class="font-bold text-lg">${task.name || 'Tarefa sem nome'}</h3>
                         </div>
-                        <p class="text-sm text-indigo-400">${task.tag}</p>
+                        <p class="tag-color ${tagColor}">${task.tag}</p>
                     </div>
                     <div class="flex items-center gap-4">
-                        <div class="text-center">
-                            <p class="text-2xl md:text-3xl font-mono" id="timer-${task.id}">${formatTime(displayTime)}</p>
-                            <p class="text-xs text-gray-400">Tempo Ativo</p>
-                        </div>
-                        <div class="text-center">
-                            <p class="text-2xl md:text-3xl font-mono">${task.pauseCount}</p>
-                            <p class="text-xs text-gray-400">Pausas</p>
-                        </div>
+                        <div class="text-center"><p class="text-2xl md:text-3xl font-mono" id="timer-${task.id}">${formatTime(displayTime)}</p><p class="text-xs text-gray-400">Tempo Ativo</p></div>
+                        <div class="text-center"><p class="text-2xl md:text-3xl font-mono">${task.pauseCount}</p><p class="text-xs text-gray-400">Pausas</p></div>
                     </div>
                     <div class="flex gap-2">
-                        ${!isRunning ? `<button class="continue-btn bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-play"></i></button>` : `<button class="pause-btn bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-pause"></i></button>`}
-                        <button class="finish-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-lg transition"><i class="fas fa-check"></i></button>
-                    </div>
-                `;
+                        <button class="${isRunning ? 'pause-btn bg-yellow-500 hover:bg-yellow-600' : 'continue-btn bg-green-600 hover:bg-green-700'}" title="${isRunning ? 'Pausar' : 'Continuar'}"><i class="fas fa-${isRunning ? 'pause' : 'play'}"></i></button>
+                        <button class="finish-btn bg-red-600 hover:bg-red-700" title="Finalizar"><i class="fas fa-check"></i></button>
+                    </div>`;
+                taskCard.querySelectorAll('button').forEach(btn => btn.classList.add('text-white', 'font-bold', 'py-2', 'px-4', 'rounded-lg', 'transition'));
                 activeTasksContainer.appendChild(taskCard);
 
-                // Adicionar event listeners
                 if(isRunning) {
                     taskCard.querySelector('.pause-btn').addEventListener('click', () => pauseTask(task));
-                    startTimer({ ...task, totalActiveTime: displayTime }); // Inicia o contador local
+                    startTimer({ ...task, totalActiveTime: displayTime });
                 } else {
                     taskCard.querySelector('.continue-btn').addEventListener('click', () => continueTask(task));
                     pauseTimer(task.id);
@@ -527,39 +652,28 @@
             });
         }
         
-        // Renderizar histórico recente
         function renderRecentHistory(entries) {
             const container = document.getElementById('recent-history-container');
-            const noHistoryEl = document.getElementById('no-recent-history');
-
-            // Limpar apenas as entradas de histórico anteriores, não a mensagem de placeholder
-            container.querySelectorAll('.history-item').forEach(item => item.remove());
-
-            if (entries.length === 0) {
-                if(noHistoryEl) noHistoryEl.classList.remove('hidden');
-            } else {
-                if(noHistoryEl) noHistoryEl.classList.add('hidden');
-                entries.forEach(entry => {
-                    const entryDiv = document.createElement('div');
-                    // Adicionar uma classe para identificar os itens e facilitar a remoção
-                    entryDiv.className = 'history-item bg-gray-700 p-3 rounded-lg flex justify-between items-center';
-                    entryDiv.innerHTML = `
-                         <div>
-                            <p class="font-semibold">${entry.name}</p>
-                            <p class="text-xs text-indigo-400">${entry.tag}</p>
-                        </div>
-                        <div class="text-right">
-                            <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
-                            <p class="text-xs text-gray-400">${new Date(entry.endTime.seconds * 1000).toLocaleDateString()}</p>
-                        </div>
-                    `;
-                    container.appendChild(entryDiv);
-                });
-            }
+            container.innerHTML = `<p id="no-recent-history" class="text-gray-400 ${entries.length > 0 ? 'hidden' : ''}">Ainda não há tarefas finalizadas.</p>`;
+            entries.forEach(entry => {
+                const tagColor = getTagColor(entry.tag);
+                const entryDiv = document.createElement('div');
+                entryDiv.className = 'bg-gray-700 p-3 rounded-lg flex justify-between items-center';
+                entryDiv.innerHTML = `
+                     <div><p class="font-semibold">${entry.name}</p><p class="tag-color ${tagColor}">${entry.tag}</p></div>
+                     <div class="text-right">
+                         <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
+                         <div class="text-xs text-gray-400 flex items-center gap-2 justify-end">
+                            <span>${new Date(entry.endTime.seconds * 1000).toLocaleDateString()}</span>
+                            <span class="flex items-center gap-1"><i class="fas fa-pause-circle"></i> ${entry.pauseCount}</span>
+                         </div>
+                     </div>`;
+                container.appendChild(entryDiv);
+            });
         }
         
         // =================================================================================
-        // 5. LÓGICA DOS DASHBOARDS E GRÁFICOS
+        // 6. LÓGICA DOS DASHBOARDS E GRÁFICOS
         // =================================================================================
         let myPerfChart = null;
         let teamCategoryChart = null;
@@ -567,59 +681,53 @@
         
         async function loadMyPerformanceDashboard() {
             const container = document.getElementById('my-performance-view');
-            
-            container.innerHTML = `
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-                    <div class="fas fa-spinner fa-spin text-4xl text-indigo-400"></div>
-                </div>`;
-
-            if (!currentUser) {
-                container.innerHTML = '';
-                return;
-            };
+            container.innerHTML = `<div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
+            if (!currentUser) { container.innerHTML = ''; return; };
 
             try {
                 const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
                 const querySnapshot = await getDocs(q);
-                const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const entries = querySnapshot.docs.map(doc => doc.data());
 
                 const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
                 const totalTasks = entries.length;
-                const avgTime = totalTasks > 0 ? totalTime / totalTasks : 0;
-
                 const timeByCategory = entries.reduce((acc, curr) => {
                     acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
                     return acc;
                 }, {});
 
-                const chartLabels = Object.keys(timeByCategory);
-                const chartData = Object.values(timeByCategory);
+                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
+                const chartLabels = filteredTimeByCategory.map(([key]) => key);
+                const chartData = filteredTimeByCategory.map(([, value]) => value);
 
-                const dashboardHTML = `
+                container.innerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center gap-4">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
+                        <div><h2 class="text-lg font-bold">Análise de Performance</h2><p class="text-sm text-gray-300">"Medir o progresso é o primeiro passo para melhorá-lo. Seus dados são o mapa para o seu pico de produtividade."</p>
+                        <button id="open-dash-help" class="mt-2 text-sm text-indigo-400 hover:underline">Ver dicas do Yeti</button></div>
+                    </div>
                      <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total Registado</p></div>
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(avgTime)}</p><p class="text-gray-400">Tempo Médio por Tarefa</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTasks > 0 ? totalTime / totalTasks : 0)}</p><p class="text-gray-400">Tempo Médio por Tarefa</p></div>
                     </div>
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
-                        <div class="bg-gray-800 p-6 rounded-xl" style="max-height: 400px; overflow-y: auto;"><h3 class="font-bold mb-4">Histórico Completo</h3>
+                        <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
                             <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Data</th></tr></thead>
-                                <tbody>${entries.map(e => `<tr class="border-b border-gray-700"><td class="p-2">${e.name}<br><span class="text-indigo-400 text-xs">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleDateString()}</td></tr>`).join('')}</tbody>
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2 flex items-center gap-1"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
+                                <tbody>${entries.map(e => {
+                                    const tagColor = getTagColor(e.tag);
+                                    return `<tr class="border-b border-gray-700"><td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${e.pauseCount}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleDateString()}</td></tr>`
+                                }).join('')}</tbody>
                             </table>
                         </div>
-                    </div>
-                `;
-                container.innerHTML = dashboardHTML;
+                    </div>`;
+                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
 
                 const ctx = document.getElementById('my-perf-category-chart').getContext('2d');
                 if (myPerfChart) myPerfChart.destroy();
-                myPerfChart = new Chart(ctx, {
-                    type: 'doughnut',
-                    data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } }
-                });
+                myPerfChart = new Chart(ctx, { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
             } catch (error) {
                 console.error("Error loading My Performance Dashboard:", error);
                 container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
@@ -628,88 +736,62 @@
 
         async function loadTeamDashboard() {
             const container = document.getElementById('team-dashboard-view');
-            
-            container.innerHTML = `
-                <div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50">
-                    <div class="fas fa-spinner fa-spin text-4xl text-indigo-400"></div>
-                </div>`;
+            container.innerHTML = `<div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
 
             try {
-                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(100));
+                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(200));
                 const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => doc.data());
 
                 const totalTime = allEntries.reduce((sum, entry) => sum + entry.totalActiveTime, 0);
-                const totalTasks = allEntries.length;
-                const activeUsers = new Set(allEntries.map(e => e.ownerId)).size;
-
-                const timeByCategory = allEntries.reduce((acc, curr) => {
-                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
-                    return acc;
-                }, {});
-
-                const timeByUser = allEntries.reduce((acc, curr) => {
-                    const email = curr.userEmail || 'Desconhecido';
-                    acc[email] = (acc[email] || 0) + curr.totalActiveTime;
-                    return acc;
-                }, {});
+                const timeByCategory = allEntries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
+                const timeByUser = allEntries.reduce((acc, curr) => { acc[curr.userEmail] = (acc[curr.userEmail] || 0) + curr.totalActiveTime; return acc; }, {});
                 
-                const topUsers = Object.entries(timeByUser).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const topUsers = Object.entries(timeByUser).filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
 
-                const dashboardHTML = `
+                container.innerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center gap-4">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
+                        <div><h2 class="text-lg font-bold">Análise da Equipe</h2><p class="text-sm text-gray-300">"Uma equipe sincronizada escala mais rápido. Estes dados mostram onde a energia coletiva está focada."</p>
+                        <button id="open-dash-help" class="mt-2 text-sm text-indigo-400 hover:underline">Ver dicas do Yeti</button></div>
+                    </div>
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total da Equipe</p></div>
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${activeUsers}</p><p class="text-gray-400">Colaboradores Ativos</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${allEntries.length}</p><p class="text-gray-400">Total de Tarefas</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${new Set(allEntries.map(e => e.ownerId)).size}</p><p class="text-gray-400">Colaboradores Ativos</p></div>
                     </div>
                      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Tempo por Categoria (Equipe)</h3><canvas id="team-category-chart"></canvas></div>
-                        <div class="bg-gray-800 p-6 rounded-xl" style="height: 400px;"><h3 class="font-bold mb-4">Top 10 Colaboradores</h3><canvas id="team-user-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Tempo por Categoria (Equipe)</h3><canvas id="team-category-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Top 10 Colaboradores</h3><canvas id="team-user-chart"></canvas></div>
                     </div>
-                     <div class="bg-gray-800 p-6 rounded-xl" style="max-height: 400px; overflow-y: auto;"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
+                     <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y: auto"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
                          <table class="w-full text-left text-sm">
                             <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Colaborador</th><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Data</th></tr></thead>
-                            <tbody>${allEntries.slice(0, 50).map(e => `<tr class="border-b border-gray-700"><td class="p-2">${e.userEmail}</td><td class="p-2">${e.name}<br><span class="text-indigo-400 text-xs">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleString()}</td></tr>`).join('')}</tbody>
+                            <tbody>${allEntries.slice(0, 50).map(e => {
+                                const tagColor = getTagColor(e.tag);
+                                return `<tr class="border-b border-gray-700"><td class="p-2">${e.userEmail}</td><td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleString()}</td></tr>`
+                            }).join('')}</tbody>
                         </table>
-                     </div>
-                `;
-                container.innerHTML = dashboardHTML;
-
-                const catCtx = document.getElementById('team-category-chart').getContext('2d');
-                if (teamCategoryChart) teamCategoryChart.destroy();
-                teamCategoryChart = new Chart(catCtx, {
-                    type: 'bar',
-                    data: { labels: Object.keys(timeByCategory), datasets: [{ label: 'Tempo', data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] },
-                    options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } }
-                });
+                     </div>`;
+                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
                 
-                const userCtx = document.getElementById('team-user-chart').getContext('2d');
-                if (teamUserChart) teamUserChart.destroy();
-                teamUserChart = new Chart(userCtx, {
-                    type: 'bar',
-                    data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] },
-                    options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } }
-                });
+                new Chart(document.getElementById('team-category-chart').getContext('2d'), { type: 'bar', data: { labels: filteredTimeByCategory.map(i => i[0]), datasets: [{ label: 'Tempo', data: filteredTimeByCategory.map(i => i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
+                new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
             } catch (error) {
                 console.error("Error loading Team Dashboard:", error);
-                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipa.</p>`;
-                if (error.code === 'failed-precondition') {
-                    console.error("Esta falha geralmente indica a falta de um índice no Firestore. Verifique a consola de erros do seu navegador; o Firebase deve fornecer um link direto para criar o índice necessário.");
-                }
+                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
+                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
             }
         }
 
         // =================================================================================
-        // 6. LÓGICA DO PERFIL E MODAIS
+        // 7. LÓGICA DO PERFIL, POMODORO E MODAIS
         // =================================================================================
         const profileModal = document.getElementById('profile-modal');
         let profileChart = null;
         
-        // Abrir/Fechar modais
-        document.getElementById('profile-button').addEventListener('click', () => {
-             profileModal.classList.remove('hidden');
-             loadProfileDashboard();
-        });
+        document.getElementById('profile-button').addEventListener('click', () => { profileModal.classList.remove('hidden'); loadProfileDashboard(); });
         document.getElementById('close-profile-modal').addEventListener('click', () => profileModal.classList.add('hidden'));
 
         async function loadUserProfile() {
@@ -717,163 +799,275 @@
             const profileRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/profile/settings`);
             const docSnap = await getDoc(profileRef);
             if (!docSnap.exists()) {
-                // Se o perfil não existir (ex: utilizadores antigos), cria um
-                 await setDoc(profileRef, { email: currentUser.email });
+                await setDoc(profileRef, { email: currentUser.email });
             }
-            updateProfileModal();
-        }
-        
-        function updateProfileModal() {
             document.getElementById('profile-email').textContent = currentUser.email;
         }
         
         async function loadProfileDashboard() {
             const container = document.getElementById('profile-dashboard-container');
-            if (!container) {
-                console.error("Contentor do dashboard do perfil não encontrado!");
-                return;
-            }
-
-            // Mostrar o loader dentro do contentor
-            container.innerHTML = `
-                <div class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg">
-                    <i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i>
-                </div>
-            `;
-
+            container.innerHTML = `<div class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg"><i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i></div>`;
             try {
-                const sevenDaysAgo = new Date();
-                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                const sevenDaysAgoTimestamp = Timestamp.fromDate(sevenDaysAgo);
-
-                const q = query(
-                    collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`),
-                    where('endTime', '>=', sevenDaysAgoTimestamp)
-                );
-
+                const sevenDaysAgo = Timestamp.fromDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), where('endTime', '>=', sevenDaysAgo));
                 const snapshot = await getDocs(q);
                 const entries = snapshot.docs.map(doc => doc.data());
 
                 const totalTime = entries.reduce((sum, e) => sum + e.totalActiveTime, 0);
-
-                const timeByCategory = entries.reduce((acc, curr) => {
-                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
-                    return acc;
-                }, {});
-
-                const contentHTML = `
-                    <p class="text-center text-3xl font-bold text-indigo-400 mb-4">${formatTime(totalTime)}</p>
-                    <div class="h-64">
-                         <canvas id="profile-category-chart"></canvas>
-                    </div>
-                `;
-                container.innerHTML = contentHTML;
-
-                const ctx = document.getElementById('profile-category-chart').getContext('2d');
-                if (profileChart) profileChart.destroy();
-                profileChart = new Chart(ctx, {
-                    type: 'pie',
-                    data: {
-                        labels: Object.keys(timeByCategory),
-                        datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-                });
+                const timeByCategory = entries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
+                
+                container.innerHTML = `<p class="text-center text-3xl font-bold text-indigo-400 mb-4">${formatTime(totalTime)}</p><div class="h-64"><canvas id="profile-category-chart"></canvas></div>`;
+                new Chart(document.getElementById('profile-category-chart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(timeByCategory), datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             } catch(error) {
                 console.error("Erro ao carregar o dashboard do perfil:", error);
                 container.innerHTML = `<div class="text-red-400 p-4">Ocorreu um erro ao carregar o seu desempenho.</div>`;
             }
         }
 
-        // =================================================================================
-        // 7. UTILITÁRIOS E GESTÃO DE ESTADO
-        // =================================================================================
+        // Pomodoro
+        const pomodoroTimerEl = document.getElementById('pomodoro-timer');
+        let pomodoroInterval;
+        let pomodoroTime = 25 * 60;
+        let pomodoroRunning = false;
         
-        // Gestão da navegação de vistas
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', () => {
-                const viewId = button.dataset.view;
-                
-                // Mudar vista
-                document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
-                document.getElementById(viewId).classList.remove('hidden');
-                
-                // Mudar estilo do botão
-                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-gray-700'));
-                button.classList.replace('bg-gray-700', 'bg-indigo-600');
+        document.getElementById('pomodoro-start').addEventListener('click', () => {
+            if (pomodoroRunning) return;
+            pomodoroRunning = true;
+            Notification.requestPermission();
+            pomodoroInterval = setInterval(() => {
+                pomodoroTime--;
+                pomodoroTimerEl.textContent = formatTime(pomodoroTime).substring(3);
+                if (pomodoroTime <= 0) {
+                    clearInterval(pomodoroInterval);
+                    pomodoroRunning = false;
+                    new Notification("Pomodoro Finalizado!", { body: "Bom trabalho! Hora de uma pausa.", icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
+                    playAlarm();
+                    pomodoroTime = 25 * 60;
+                }
+            }, 1000);
+        });
+        document.getElementById('pomodoro-pause').addEventListener('click', () => { clearInterval(pomodoroInterval); pomodoroRunning = false; });
+        document.getElementById('pomodoro-reset').addEventListener('click', () => { clearInterval(pomodoroInterval); pomodoroRunning = false; pomodoroTime = 25 * 60; pomodoroTimerEl.textContent = "25:00"; });
+        
+        function playAlarm() {
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 500);
+        }
 
-                // Carregar dados para a vista
-                if (viewId === 'my-performance-view') loadMyPerformanceDashboard();
-                if (viewId === 'team-dashboard-view') loadTeamDashboard();
-            });
+        // Central de Ajuda
+        const helpModal = document.getElementById('help-modal');
+        document.getElementById('open-timer-help').addEventListener('click', openHelpModal);
+        document.getElementById('close-help-modal').addEventListener('click', () => helpModal.classList.add('hidden'));
+
+        function openHelpModal() {
+            const currentView = document.querySelector('.nav-button.bg-indigo-600').dataset.view;
+            const contentEl = document.getElementById('help-modal-content');
+            if (currentView === 'timer-view') {
+                contentEl.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full">
+                        <h2 class="text-2xl font-bold text-white">Maximizando o Foco 💡</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- Card Pomodoro -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-red-400 mt-1"><i class="fas fa-stopwatch"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Domine o Pomodoro</h3>
+                                <p class="text-gray-300 text-sm">Use os ciclos de 25 minutos para manter a concentração máxima. Ao final, faça uma pausa curta. Isso treina seu cérebro para focar intensamente por períodos definidos.</p>
+                            </div>
+                        </div>
+                        <!-- Card Tarefas -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-blue-400 mt-1"><i class="fas fa-tasks"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Limite suas Tarefas Ativas</h3>
+                                <p class="text-gray-300 text-sm">Limitar as tarefas ativas a 3 força a priorização. Conclua o que começou antes de abrir novos loops. Foco gera momentum e evita a sobrecarga mental.</p>
+                            </div>
+                        </div>
+                        <!-- Card Yeti -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-indigo-400 mt-1"><i class="fas fa-comment-dots"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Converse com o Yeti</h3>
+                                <p class="text-gray-300 text-sm">Pergunte ao nosso assistente sobre seus padrões de trabalho. "Onde gastei mais tempo hoje?" pode revelar insights para otimizar seu próximo dia.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } else {
+                 contentEl.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full">
+                        <h2 class="text-2xl font-bold text-white">Entendendo Seus Dados 📊</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- Card Tempo Total -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-green-400 mt-1"><i class="fas fa-chart-line"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Tempo Total e Esforço</h3>
+                                <p class="text-gray-300 text-sm">Este é o seu indicador de esforço bruto. É a base da sua produtividade. Aumentá-lo consistentemente, com qualidade, é o objetivo principal.</p>
+                            </div>
+                        </div>
+                        <!-- Card Categoria -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-purple-400 mt-1"><i class="fas fa-chart-pie"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Tempo por Categoria</h3>
+                                <p class="text-gray-300 text-sm">Revela para onde sua energia está a fluir. Se o tempo em 'Reuniões' é maior que em 'Desenvolvimento', pode ser um sinal para reavaliar sua agenda e prioridades.</p>
+                            </div>
+                        </div>
+                        <!-- Card Colaboradores -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-yellow-400 mt-1"><i class="fas fa-users"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Top Colaboradores</h3>
+                                <p class="text-gray-300 text-sm">Na visão de equipe, este gráfico não é sobre competição, mas sobre reconhecer o esforço e identificar quem pode ser um mentor em práticas de alta produtividade.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            helpModal.classList.remove('hidden');
+        }
+
+        // =================================================================================
+        // 8. LÓGICA DO CHATBOT
+        // =================================================================================
+        const chatModal = document.getElementById('chat-modal');
+        const chatMessages = document.getElementById('chat-messages');
+        const chatForm = document.getElementById('chat-form');
+
+        document.getElementById('open-chat-btn').addEventListener('click', () => chatModal.classList.toggle('hidden'));
+        document.getElementById('close-chat-btn').addEventListener('click', () => chatModal.classList.add('hidden'));
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (message) {
+                addUserMessage(message);
+                processChatMessage(message);
+            }
+            input.value = '';
         });
 
-        // Listeners do Firestore
-        function setupListeners() {
-            if (!currentUser) return;
-            cleanupListeners(); // Garantir que não há listeners duplicados
+        function addUserMessage(message) {
+            chatMessages.innerHTML += `<div class="flex justify-end"><div class="chat-bubble bg-indigo-600 text-white p-3 rounded-lg">${message}</div></div>`;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
 
-            // Listener para tarefas ativas
-            const activeTasksQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`));
-            unsubscribeActiveTasks = onSnapshot(activeTasksQuery, (snapshot) => {
-                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Limpar todos os intervalos antigos antes de renderizar
-                Object.values(timerIntervals).forEach(clearInterval);
-                timerIntervals = {};
-                renderActiveTasks(tasks);
-            });
-            
-            // Listener para histórico recente
-            const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
-            unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
-                 const entries = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                 renderRecentHistory(entries);
-            }, (error) => {
-                console.error("Falha ao carregar o histórico recente: ", error);
-                if (error.code === 'failed-precondition') {
-                    console.error("Esta falha geralmente indica a falta de um índice no Firestore. Verifique a consola de erros do seu navegador; o Firebase deve fornecer um link direto para criar o índice necessário.");
+        function addBotMessage(message) {
+            const botMessageHTML = `
+                <div class="flex items-end gap-2">
+                    <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-8 h-8 rounded-full">
+                    <div class="chat-bubble bg-gray-700 p-3 rounded-lg">${message}</div>
+                </div>
+            `;
+            chatMessages.innerHTML += botMessageHTML;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+        
+        async function callGemini(payload) {
+            const apiKey = firebaseConfig.apiKey;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error("Error from Gemini API:", errorBody.error);
+                    throw new Error(`API request failed with status ${response.status}: ${errorBody.error.message}`);
                 }
-            });
-        }
 
-        // Limpar listeners ao fazer logout
-        function cleanupListeners() {
-            if (unsubscribeActiveTasks) unsubscribeActiveTasks();
-            if (unsubscribeRecentHistory) unsubscribeRecentHistory();
-            Object.values(timerIntervals).forEach(clearInterval);
-            timerIntervals = {};
-        }
-        
-        function clearUI() {
-            activeTasksContainer.innerHTML = '';
-            document.getElementById('recent-history-container').innerHTML = `<p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>`;
-            document.getElementById('my-performance-view').innerHTML = '';
-            document.getElementById('team-dashboard-view').innerHTML = '';
-            // Resetar navegação
-             document.querySelector('[data-view="timer-view"]').click();
-        }
+                const result = await response.json();
+                const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
+                
+                if (!text) {
+                    console.error("Unexpected response structure from Gemini:", result);
+                    throw new Error("Invalid response structure from AI.");
+                }
+                
+                return text;
 
-        // Função para formatar segundos em HH:MM:SS
-        function formatTime(totalSeconds) {
-            if(isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
-            const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-            const seconds = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
-            return `${hours}:${minutes}:${seconds}`;
-        }
-        
-        // Função para gerar cores para os gráficos
-        function generateColors(numColors) {
-            const colors = [
-                '#4f46e5', '#7c3aed', '#db2777', '#f97316', 
-                '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'
-            ];
-            let result = [];
-            for (let i = 0; i < numColors; i++) {
-                result.push(colors[i % colors.length]);
+            } catch (error) {
+                console.error("Error calling Gemini:", error);
+                return "Desculpe, não consegui processar sua pergunta com a IA no momento. Verifique a consola para mais detalhes.";
             }
-            return result;
+        }
+
+        async function processChatMessage(message) {
+            try {
+                addBotMessage('<i class="fas fa-spinner fa-spin"></i> Pensando...');
+                const lastMessageBubble = chatMessages.lastElementChild.querySelector('.chat-bubble');
+
+                // Adiciona a mensagem do utilizador ao histórico
+                chatHistory.push({ role: "user", parts: [{ text: message }] });
+
+                // 1. Obter contexto das tarefas recentes
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(15));
+                const snapshot = await getDocs(q);
+                const entries = snapshot.docs.map(doc => {
+                    const data = doc.data();
+                    return { tarefa: data.name, categoria: data.tag, duracao: formatTime(data.totalActiveTime), data: new Date(data.endTime.seconds * 1000).toLocaleDateString() };
+                });
+                const taskContext = JSON.stringify(entries, null, 2);
+
+                // 2. Montar a instrução do sistema (persona e regras)
+                const systemInstruction = {
+                    parts: [{ text: `
+                        Você é o Yeti, um assistente de IA especialista em produtividade para a aplicação Timer Evereste.
+                        O nome do usuário com quem você está falando é ${currentUserName}. Chame-o pelo nome para criar uma experiência mais pessoal e amigável.
+                        Sua personalidade é amigável, encorajadora e prestativa.
+                        Sua função é responder às perguntas do usuário sobre a produtividade dele, sobre como usar a aplicação, ou dar dicas de produtividade.
+                        Use o histórico de tarefas recentes do usuário para dar respostas personalizadas e inteligentes.
+                        Mantenha um fluxo de conversa natural. Não se apresente repetidamente. Aja como se estivesse continuando uma conversa existente.
+
+                        **REGRAS DE FORMATAÇÃO E RESPOSTA (MUITO IMPORTANTE):**
+                        - Formate suas respostas usando tags HTML simples. NUNCA use Markdown.
+                        - Use a tag <b></b> para destacar informações importantes como totais de tempo, nomes de tarefas, categorias e números.
+                        - Use <ul> e <li> para criar listas quando apresentar opções ou múltiplos itens.
+                        - Use emojis relevantes para tornar a conversa mais visual e amigável (ex: ⏳ para tempo, 💡 para dicas, 📊 para dados, 🛠️ para suporte).
+                        - Responda sempre em português do Brasil, de forma concisa e útil.
+
+                        HISTÓRICO DE TAREFAS RECENTES (Contexto para suas respostas):
+                        ${taskContext}
+                    `}]
+                };
+                
+                // 3. Montar o payload final para a API
+                const payload = {
+                    contents: chatHistory,
+                    systemInstruction: systemInstruction
+                };
+
+                // 4. Chamar a IA, exibir a resposta e guardar no histórico
+                const geminiResponse = await callGemini(payload);
+                lastMessageBubble.innerHTML = geminiResponse;
+                chatHistory.push({ role: "model", parts: [{ text: geminiResponse }] });
+
+            } catch (e) {
+                console.error("Error in processChatMessage with AI:", e);
+                const lastMessageBubble = chatMessages.lastElementChild.querySelector('.chat-bubble');
+                if (lastMessageBubble) {
+                    lastMessageBubble.innerHTML = "Ocorreu um erro ao conectar com a IA. Por favor, tente novamente.";
+                }
+                // Remove a última pergunta do histórico se a chamada falhar
+                chatHistory.pop();
+            }
         }
     </script>
 </body>
 </html>
+
