@@ -55,6 +55,18 @@
             font-weight: 600;
             display: inline-block;
         }
+        #open-chat-btn {
+            position: fixed;
+            bottom: 1.5rem; /* 24px */
+            right: 1.5rem; /* 24px */
+            z-index: 100;
+            touch-action: none; /* Previne o scroll da página em dispositivos de toque */
+            cursor: move;
+        }
+        #chat-modal {
+            position: fixed;
+            z-index: 100;
+        }
     </style>
 </head>
 
@@ -180,7 +192,7 @@
         </main>
 
         <!-- Botão Flutuante do Chatbot -->
-        <button id="open-chat-btn" class="fixed bottom-6 right-6 bg-indigo-600 hover:bg-indigo-700 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 overflow-hidden p-1">
+        <button id="open-chat-btn" class="bg-indigo-600 hover:bg-indigo-700 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 overflow-hidden p-1">
             <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Abrir Chat do Yeti" class="w-full h-full object-cover rounded-full">
         </button>
     </div>
@@ -207,7 +219,7 @@
     </div>
 
     <!-- Modal do Chatbot -->
-    <div id="chat-modal" class="hidden fixed bottom-24 right-6 w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col z-50 fade-in">
+    <div id="chat-modal" class="hidden bottom-24 right-6 w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col fade-in">
         <div class="flex items-center p-4 bg-gray-900 rounded-t-2xl">
             <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-10 h-10 rounded-full mr-3">
             <div>
@@ -698,30 +710,42 @@
             entries.forEach(entry => {
                 const tagColor = getTagColor(entry.tag);
                 const entryDiv = document.createElement('div');
-                entryDiv.className = 'bg-gray-700 p-3 rounded-lg flex justify-between items-center';
+                entryDiv.className = 'bg-gray-700 p-4 rounded-lg';
 
                 const sevenDaysAgo = new Date();
                 sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                const taskDate = new Date(entry.endTime.seconds * 1000);
-                const isDeletable = taskDate > sevenDaysAgo;
+                const taskEndDate = new Date(entry.endTime.seconds * 1000);
+                const taskStartDate = new Date(entry.startTime.seconds * 1000);
+                const isDeletable = taskEndDate > sevenDaysAgo;
                 
                 entryDiv.innerHTML = `
-                     <div class="flex-1">
-                        <p class="font-semibold">${entry.name}</p>
-                        <p class="tag-color ${tagColor}">${entry.tag}</p>
-                     </div>
-                     <div class="flex items-center gap-4">
-                         <div class="text-right">
-                             <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
-                             <div class="text-xs text-gray-400 flex items-center gap-2 justify-end">
-                                <span>${taskDate.toLocaleDateString()}</span>
-                                <span class="flex items-center gap-1"><i class="fas fa-pause-circle"></i> ${entry.pauseCount}</span>
-                             </div>
-                         </div>
-                         <div class="w-8 text-center">
-                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
-                         </div>
-                     </div>`;
+                     <div class="flex justify-between items-start w-full">
+                        <div>
+                            <p class="font-semibold text-base">${entry.name}</p>
+                            <p class="tag-color ${tagColor}">${entry.tag}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-4">
+                            <p class="font-mono text-xl">${formatTime(entry.totalActiveTime)}</p>
+                            <p class="text-xs text-gray-400">Tempo Total</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-600/50 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 items-center">
+                        <div>
+                            <p class="font-bold">Início:</p>
+                            <p>${taskStartDate.toLocaleDateString()} ${taskStartDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Fim:</p>
+                            <p>${taskEndDate.toLocaleDateString()} ${taskEndDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Pausas:</p>
+                            <p>${entry.pauseCount}</p>
+                        </div>
+                        <div class="flex justify-end">
+                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400 text-lg" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`;
                 container.appendChild(entryDiv);
             });
         }
@@ -769,16 +793,18 @@
                         <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
                         <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
                             <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo Total</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Início</th><th class="p-2">Fim</th></tr></thead>
                                 <tbody>${entries.map(e => {
                                     const tagColor = getTagColor(e.tag);
-                                    const taskDate = new Date(e.endTime.seconds * 1000);
+                                    const startDate = new Date(e.startTime.seconds * 1000);
+                                    const endDate = new Date(e.endTime.seconds * 1000);
 
                                     return `<tr class="border-b border-gray-700">
                                         <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
                                         <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
                                         <td class="p-2">${e.pauseCount}</td>
-                                        <td class="p-2">${taskDate.toLocaleDateString()}</td>
+                                        <td class="p-2">${startDate.toLocaleString([], {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td class="p-2">${endDate.toLocaleString([], {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
                                     </tr>`
                                 }).join('')}</tbody>
                             </table>
@@ -1010,8 +1036,8 @@
         const chatModal = document.getElementById('chat-modal');
         const chatMessages = document.getElementById('chat-messages');
         const chatForm = document.getElementById('chat-form');
+        const openChatBtn = document.getElementById('open-chat-btn');
 
-        document.getElementById('open-chat-btn').addEventListener('click', () => chatModal.classList.toggle('hidden'));
         document.getElementById('close-chat-btn').addEventListener('click', () => chatModal.classList.add('hidden'));
 
         chatForm.addEventListener('submit', (e) => {
@@ -1137,6 +1163,128 @@
                 chatHistory.pop();
             }
         }
+
+        // =================================================================================
+        // 9. LÓGICA DO BOTÃO DE CHAT ARRASTÁVEL
+        // =================================================================================
+        let isDragging = false;
+        let hasDragged = false;
+        let startX, startY;
+        let btnRect = openChatBtn.getBoundingClientRect();
+        let offsetX = 0, offsetY = 0;
+
+        // Define a posição inicial do botão com base no seu posicionamento CSS
+        function initializeButtonPosition() {
+            btnRect = openChatBtn.getBoundingClientRect();
+            openChatBtn.style.left = `${btnRect.left}px`;
+            openChatBtn.style.top = `${btnRect.top}px`;
+            openChatBtn.style.right = 'auto';
+            openChatBtn.style.bottom = 'auto';
+        }
+        initializeButtonPosition();
+
+
+        function onDragStart(e) {
+            isDragging = true;
+            hasDragged = false;
+            
+            startX = e.clientX || e.touches[0].clientX;
+            startY = e.clientY || e.touches[0].clientY;
+            
+            btnRect = openChatBtn.getBoundingClientRect();
+            offsetX = startX - btnRect.left;
+            offsetY = startY - btnRect.top;
+
+            document.addEventListener('mousemove', onDragMove);
+            document.addEventListener('touchmove', onDragMove, { passive: false });
+            document.addEventListener('mouseup', onDragEnd);
+            document.addEventListener('touchend', onDragEnd);
+        }
+
+        function onDragMove(e) {
+            if (!isDragging) return;
+            e.preventDefault(); 
+            
+            const currentX = e.clientX || e.touches[0].clientX;
+            const currentY = e.clientY || e.touches[0].clientY;
+
+            // Define 'hasDragged' se o movimento for superior a um pequeno limiar
+            if (!hasDragged && (Math.abs(currentX - startX) > 5 || Math.abs(currentY - startY) > 5)) {
+                hasDragged = true;
+            }
+
+            let newLeft = currentX - offsetX;
+            let newTop = currentY - offsetY;
+
+            // Limita o movimento à janela de visualização
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+
+            if (newLeft < 0) newLeft = 0;
+            if (newTop < 0) newTop = 0;
+            if (newLeft + btnRect.width > viewportWidth) newLeft = viewportWidth - btnRect.width;
+            if (newTop + btnRect.height > viewportHeight) newTop = viewportHeight - btnRect.height;
+
+            openChatBtn.style.left = `${newLeft}px`;
+            openChatBtn.style.top = `${newTop}px`;
+            
+            positionChatModal();
+        }
+
+        function onDragEnd() {
+            isDragging = false;
+            document.removeEventListener('mousemove', onDragMove);
+            document.removeEventListener('touchmove', onDragMove);
+            document.removeEventListener('mouseup', onDragEnd);
+            document.removeEventListener('touchend', onDragEnd);
+        }
+
+        function positionChatModal() {
+            if (chatModal.classList.contains('hidden')) return;
+            
+            const btnRect = openChatBtn.getBoundingClientRect();
+            const modalRect = chatModal.getBoundingClientRect();
+
+            let modalTop = btnRect.top - modalRect.height - 16; // 1rem acima
+            let modalLeft = btnRect.left + (btnRect.width / 2) - (modalRect.width / 2);
+
+            // Ajusta se o modal sair do ecrã
+            if (modalTop < 10) {
+                modalTop = btnRect.bottom + 16; // 1rem abaixo se não houver espaço em cima
+            }
+            if (modalLeft < 10) {
+                modalLeft = 10;
+            }
+            if (modalLeft + modalRect.width > window.innerWidth) {
+                modalLeft = window.innerWidth - modalRect.width - 10;
+            }
+            if (modalTop + modalRect.height > window.innerHeight) {
+                 modalTop = window.innerHeight - modalRect.height - 10;
+            }
+
+            chatModal.style.left = `${modalLeft}px`;
+            chatModal.style.top = `${modalTop}px`;
+            chatModal.style.right = 'auto';
+            chatModal.style.bottom = 'auto';
+        }
+
+        openChatBtn.addEventListener('mousedown', onDragStart);
+        openChatBtn.addEventListener('touchstart', onDragStart, { passive: false });
+
+        openChatBtn.addEventListener('click', (e) => {
+            if (hasDragged) {
+                e.preventDefault();
+                return;
+            }
+            chatModal.classList.toggle('hidden');
+            positionChatModal();
+        });
+
+        // Reposiciona o modal ao redimensionar a janela
+        window.addEventListener('resize', () => {
+             initializeButtonPosition();
+             positionChatModal();
+        });
     </script>
 </body>
 </html>
