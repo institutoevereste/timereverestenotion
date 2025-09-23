@@ -275,6 +275,8 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        const appContainer = document.getElementById('app-container');
+
         let currentUser = null;
         let activeTasks = [];
         let timerIntervals = {};
@@ -351,6 +353,33 @@
         // =================================================================================
         // 3. UTILITÁRIOS E GESTÃO DE ESTADO
         // =================================================================================
+        
+        // Listener de eventos centralizado para conteúdo dinâmico
+        appContainer.addEventListener('click', async (event) => {
+            // Botão de exclusão do histórico
+            const deleteButton = event.target.closest('.delete-history-btn');
+            if (deleteButton && !deleteButton.disabled) {
+                const originalIcon = deleteButton.innerHTML;
+                deleteButton.disabled = true;
+                deleteButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                const entryId = deleteButton.dataset.id;
+                
+                try {
+                    if (entryId) {
+                        await deleteHistoryEntry(entryId);
+                        // Sucesso! O onSnapshot irá atualizar a UI.
+                    }
+                } catch (error) {
+                    console.error("Falha ao excluir, revertendo o botão.", error);
+                    // Se falhar, reverte o botão ao estado original após um segundo
+                    setTimeout(() => {
+                        deleteButton.disabled = false;
+                        deleteButton.innerHTML = originalIcon;
+                    }, 1000);
+                }
+            }
+        });
+        
         document.querySelectorAll('.nav-button').forEach(button => {
             button.addEventListener('click', () => {
                 const viewId = button.dataset.view;
@@ -375,7 +404,7 @@
             });
             const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
             unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
-                 renderRecentHistory(snapshot.docs.map(doc => doc.data()));
+                 renderRecentHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             }, (error) => {
                 console.error("Falha ao carregar o histórico recente: ", error);
                 if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Verifique a consola de erros.");
@@ -414,7 +443,6 @@
         // 4. LÓGICA DE AUTENTICAÇÃO
         // =================================================================================
         const authContainer = document.getElementById('auth-container');
-        const appContainer = document.getElementById('app-container');
         const authForm = document.getElementById('auth-form');
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggle-auth-mode');
@@ -671,13 +699,27 @@
                 const tagColor = getTagColor(entry.tag);
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'bg-gray-700 p-3 rounded-lg flex justify-between items-center';
+
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const taskDate = new Date(entry.endTime.seconds * 1000);
+                const isDeletable = taskDate > sevenDaysAgo;
+                
                 entryDiv.innerHTML = `
-                     <div><p class="font-semibold">${entry.name}</p><p class="tag-color ${tagColor}">${entry.tag}</p></div>
-                     <div class="text-right">
-                         <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
-                         <div class="text-xs text-gray-400 flex items-center gap-2 justify-end">
-                            <span>${new Date(entry.endTime.seconds * 1000).toLocaleDateString()}</span>
-                            <span class="flex items-center gap-1"><i class="fas fa-pause-circle"></i> ${entry.pauseCount}</span>
+                     <div class="flex-1">
+                        <p class="font-semibold">${entry.name}</p>
+                        <p class="tag-color ${tagColor}">${entry.tag}</p>
+                     </div>
+                     <div class="flex items-center gap-4">
+                         <div class="text-right">
+                             <p class="font-mono text-lg">${formatTime(entry.totalActiveTime)}</p>
+                             <div class="text-xs text-gray-400 flex items-center gap-2 justify-end">
+                                <span>${taskDate.toLocaleDateString()}</span>
+                                <span class="flex items-center gap-1"><i class="fas fa-pause-circle"></i> ${entry.pauseCount}</span>
+                             </div>
+                         </div>
+                         <div class="w-8 text-center">
+                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
                          </div>
                      </div>`;
                 container.appendChild(entryDiv);
@@ -727,39 +769,22 @@
                         <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
                         <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
                             <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th><th class="p-2">Ação</th></tr></thead>
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
                                 <tbody>${entries.map(e => {
                                     const tagColor = getTagColor(e.tag);
-                                    const sevenDaysAgo = new Date();
-                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
                                     const taskDate = new Date(e.endTime.seconds * 1000);
-                                    const isDeletable = taskDate > sevenDaysAgo;
 
                                     return `<tr class="border-b border-gray-700">
                                         <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
                                         <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
                                         <td class="p-2">${e.pauseCount}</td>
                                         <td class="p-2">${taskDate.toLocaleDateString()}</td>
-                                        <td class="p-2 text-center">
-                                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${e.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
-                                        </td>
                                     </tr>`
                                 }).join('')}</tbody>
                             </table>
                         </div>
                     </div>`;
                 container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
-
-                // Adiciona o listener para os botões de exclusão
-                container.addEventListener('click', async (event) => {
-                    if (event.target.closest('.delete-history-btn')) {
-                        const button = event.target.closest('.delete-history-btn');
-                        const entryId = button.dataset.id;
-                        if (entryId) {
-                            await deleteHistoryEntry(entryId);
-                        }
-                    }
-                });
 
                 const ctx = document.getElementById('my-perf-category-chart').getContext('2d');
                 if (myPerfChart) myPerfChart.destroy();
@@ -822,13 +847,11 @@
         }
 
         async function deleteHistoryEntry(entryId) {
-            if (!currentUser || !entryId) return;
-            try {
-                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId));
-                loadMyPerformanceDashboard(); // Recarrega o dashboard para mostrar a alteração
-            } catch (error) {
-                console.error("Error deleting history entry: ", error);
+            if (!currentUser || !entryId) {
+                throw new Error("Utilizador não autenticado ou ID da entrada inválido.");
             }
+            // A função agora apenas tenta apagar e lança um erro se falhar.
+            await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId));
         }
 
         // =================================================================================
