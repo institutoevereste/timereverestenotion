@@ -599,14 +599,26 @@
                  const now = Timestamp.now();
                  finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
             }
-            const finishedTask = { ...taskToFinish, userEmail: currentUser.email, endTime: Timestamp.now(), totalActiveTime: finalActiveTime };
+
+            // Separa o ID do resto dos dados da tarefa para evitar duplicação
+            const { id, ...taskData } = taskToFinish;
+
+            const finishedTask = { 
+                ...taskData,
+                userEmail: currentUser.email, 
+                endTime: Timestamp.now(), 
+                totalActiveTime: finalActiveTime 
+            };
+            
+            // Limpa propriedades desnecessárias
             delete finishedTask.status;
             delete finishedTask.lastStartTime;
             delete finishedTask.lastPauseTime;
             
             try {
+                // Adiciona ao histórico e depois remove da lista de ativas
                 await addDoc(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), finishedTask);
-                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskToFinish.id));
+                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, id));
             } catch(error) { console.error("Error finishing task: ", error); }
         }
         
@@ -687,7 +699,7 @@
             try {
                 const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
                 const querySnapshot = await getDocs(q);
-                const entries = querySnapshot.docs.map(doc => doc.data());
+                const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
                 const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
                 const totalTasks = entries.length;
@@ -715,15 +727,39 @@
                         <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
                         <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
                             <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2 flex items-center gap-1"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th><th class="p-2">Ação</th></tr></thead>
                                 <tbody>${entries.map(e => {
                                     const tagColor = getTagColor(e.tag);
-                                    return `<tr class="border-b border-gray-700"><td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2">${e.pauseCount}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleDateString()}</td></tr>`
+                                    const sevenDaysAgo = new Date();
+                                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                                    const taskDate = new Date(e.endTime.seconds * 1000);
+                                    const isDeletable = taskDate > sevenDaysAgo;
+
+                                    return `<tr class="border-b border-gray-700">
+                                        <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
+                                        <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
+                                        <td class="p-2">${e.pauseCount}</td>
+                                        <td class="p-2">${taskDate.toLocaleDateString()}</td>
+                                        <td class="p-2 text-center">
+                                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${e.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
+                                        </td>
+                                    </tr>`
                                 }).join('')}</tbody>
                             </table>
                         </div>
                     </div>`;
                 container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
+
+                // Adiciona o listener para os botões de exclusão
+                container.addEventListener('click', async (event) => {
+                    if (event.target.closest('.delete-history-btn')) {
+                        const button = event.target.closest('.delete-history-btn');
+                        const entryId = button.dataset.id;
+                        if (entryId) {
+                            await deleteHistoryEntry(entryId);
+                        }
+                    }
+                });
 
                 const ctx = document.getElementById('my-perf-category-chart').getContext('2d');
                 if (myPerfChart) myPerfChart.destroy();
@@ -782,6 +818,16 @@
                 console.error("Error loading Team Dashboard:", error);
                 container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
                 if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
+            }
+        }
+
+        async function deleteHistoryEntry(entryId) {
+            if (!currentUser || !entryId) return;
+            try {
+                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId));
+                loadMyPerformanceDashboard(); // Recarrega o dashboard para mostrar a alteração
+            } catch (error) {
+                console.error("Error deleting history entry: ", error);
             }
         }
 
@@ -1071,3 +1117,7 @@
     </script>
 </body>
 </html>
+
+
+
+
