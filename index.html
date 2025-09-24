@@ -8,6 +8,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
     <style>
         /* Estilo para a barra de scroll */
@@ -66,6 +67,30 @@
         #chat-modal {
             position: fixed;
             z-index: 100;
+        }
+        /* Estilos para o Date Range Picker */
+        .daterangepicker {
+            background-color: #374151 !important;
+            border-color: #4b5563 !important;
+        }
+        .daterangepicker .calendar-table {
+            background-color: #374151 !important;
+        }
+        .daterangepicker th, .daterangepicker td {
+            color: #d1d5db !important;
+        }
+        .daterangepicker .off, .daterangepicker .off.in-range, .daterangepicker .off.start-date, .daterangepicker .off.end-date {
+            background-color: #1f2937 !important;
+            color: #6b7280 !important;
+        }
+        .daterangepicker .drp-buttons .btn {
+            background-color: #4f46e5 !important;
+            border-color: #4f46e5 !important;
+            color: white !important;
+        }
+        .daterangepicker .drp-buttons .btn-default {
+            background-color: #4b5563 !important;
+            border-color: #4b5563 !important;
         }
     </style>
 </head>
@@ -250,6 +275,10 @@
         </form>
     </div>
     
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+
     <script type="module">
         // Importar funções do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
@@ -833,12 +862,62 @@
             }
         }
 
-        async function loadTeamDashboard() {
+        async function loadTeamDashboard(startDate = null, endDate = null) {
             const container = document.getElementById('team-dashboard-view');
-            container.innerHTML = `<div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
+            const dashboardContentId = 'team-dashboard-content';
+            let dashboardContent = document.getElementById(dashboardContentId);
+
+            if (!dashboardContent) {
+                 container.innerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                           <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
+                            <div>
+                                <h2 class="text-lg font-bold">Análise da Equipe</h2>
+                                <p class="text-sm text-gray-300">"Uma equipe sincronizada escala mais rápido."</p>
+                            </div>
+                        </div>
+                        <button id="open-dash-help" class="text-sm text-indigo-400 hover:underline flex-shrink-0">Ver dicas do Yeti</button>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
+                        <button class="filter-btn bg-indigo-600" data-period="today">Hoje</button>
+                        <button class="filter-btn" data-period="week">Esta Semana</button>
+                        <button class="filter-btn" data-period="month">Este Mês</button>
+                        <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
+                    </div>
+                    <div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
+                dashboardContent = document.getElementById(dashboardContentId);
+                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
+                 // Inicializa o date picker
+                $('#date-range-picker').daterangepicker({
+                    opens: 'left',
+                    locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
+                }, function(start, end) {
+                    loadTeamDashboard(start.toDate(), end.toDate());
+                });
+                
+                container.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                        e.target.classList.add('bg-indigo-600');
+                        const period = e.target.dataset.period;
+                        if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
+                        else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
+                        else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
+                    });
+                });
+            }
+
+            dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
 
             try {
-                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(200));
+                let timeEntriesQuery;
+                if(startDate && endDate){
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
+                } else {
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(300));
+                }
+
                 const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => doc.data());
 
@@ -849,12 +928,7 @@
                 const topUsers = Object.entries(timeByUser).filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
                 const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
 
-                container.innerHTML = `
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center gap-4">
-                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
-                        <div><h2 class="text-lg font-bold">Análise da Equipe</h2><p class="text-sm text-gray-300">"Uma equipe sincronizada escala mais rápido. Estes dados mostram onde a energia coletiva está focada."</p>
-                        <button id="open-dash-help" class="mt-2 text-sm text-indigo-400 hover:underline">Ver dicas do Yeti</button></div>
-                    </div>
+                dashboardContent.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total da Equipe</p></div>
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${allEntries.length}</p><p class="text-gray-400">Total de Tarefas</p></div>
@@ -864,7 +938,7 @@
                         <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Tempo por Categoria (Equipe)</h3><canvas id="team-category-chart"></canvas></div>
                         <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Top 10 Colaboradores</h3><canvas id="team-user-chart"></canvas></div>
                     </div>
-                     <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y: auto"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
+                     <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
                          <table class="w-full text-left text-sm">
                             <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Colaborador</th><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
                             <tbody>${allEntries.slice(0, 50).map(e => {
@@ -873,13 +947,12 @@
                             }).join('')}</tbody>
                         </table>
                      </div>`;
-                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
                 
                 new Chart(document.getElementById('team-category-chart').getContext('2d'), { type: 'bar', data: { labels: filteredTimeByCategory.map(i => i[0]), datasets: [{ label: 'Tempo', data: filteredTimeByCategory.map(i => i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
                 new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
             } catch (error) {
                 console.error("Error loading Team Dashboard:", error);
-                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
+                dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
                 if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
             }
         }
