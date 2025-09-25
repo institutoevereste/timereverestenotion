@@ -193,7 +193,7 @@
             <!-- Vista do Timer -->
             <div id="timer-view" class="view-content fade-in space-y-6">
                 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div class="lg:col-span-2 space-y-6">
+                    <div class="lg-col-span-2 space-y-6">
                         <!-- Criação de Tarefa -->
                         <div id="task-creation-container" class="bg-gray-800 p-4 rounded-xl shadow-lg">
                             <h2 class="text-lg font-bold mb-3">Iniciar nova tarefa</h2>
@@ -888,24 +888,44 @@
             const rect = targetElement.getBoundingClientRect();
             highlightBox.style.width = `${rect.width + 10}px`;
             highlightBox.style.height = `${rect.height + 10}px`;
-            highlightBox.style.top = `${rect.top - 5 + window.scrollY}px`;
-            highlightBox.style.left = `${rect.left - 5 + window.scrollX}px`;
+            highlightBox.style.top = `${rect.top - 5}px`;
+            highlightBox.style.left = `${rect.left - 5}px`;
 
             document.getElementById('tutorial-title').textContent = step.title;
             document.getElementById('tutorial-text').textContent = step.text;
             document.getElementById('tutorial-step-counter').textContent = `${stepIndex + 1} / ${tutorialSteps.length}`;
             
-            // Posiciona o modal
-            let modalTop = rect.bottom + 15 + window.scrollY;
-            if (modalTop + modalBox.offsetHeight > window.innerHeight) {
-                 modalTop = rect.top - modalBox.offsetHeight - 15 + window.scrollY;
+            // Posiciona o modal de forma inteligente
+            const modalRect = modalBox.getBoundingClientRect();
+            let modalTop = rect.bottom + 15;
+            let modalLeft = rect.left;
+
+            // Se o modal sair por baixo, coloca-o por cima
+            if (modalTop + modalRect.height > window.innerHeight - 15) {
+                modalTop = rect.top - modalRect.height - 15;
             }
-             modalBox.style.top = `${modalTop}px`;
-             modalBox.style.left = `${rect.left + window.scrollX}px`;
+
+            // Se o modal sair pela direita, alinha-o à direita do ecrã
+            if (modalLeft + modalRect.width > window.innerWidth - 15) {
+                modalLeft = window.innerWidth - modalRect.width - 15;
+            }
+            
+            // Garante que não sai pela esquerda
+            if (modalLeft < 15) {
+                modalLeft = 15;
+            }
+            // Garante que não sai por cima
+            if (modalTop < 15) {
+                modalTop = 15;
+            }
+
+            modalBox.style.top = `${modalTop}px`;
+            modalBox.style.left = `${modalLeft}px`;
 
             document.getElementById('tutorial-prev').style.visibility = stepIndex === 0 ? 'hidden' : 'visible';
             document.getElementById('tutorial-next').textContent = stepIndex === tutorialSteps.length - 1 ? 'Finalizar' : 'Próximo »';
         }
+
 
         function startTutorial() {
             document.getElementById('tutorial-container').classList.remove('hidden');
