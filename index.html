@@ -1083,8 +1083,14 @@
         }
 
         async function callGemini(systemInstruction, history) {
-            const apiKey = ""; 
+            // IMPORTANTE: Para o chat funcionar no seu site publicado (como no GitHub Pages),
+            // você PRECISA criar sua própria chave de API no Google AI Studio e colá-la aqui.
+            // 1. Visite https://aistudio.google.com/app/apikey para criar sua chave.
+            // 2. Cole a chave entre as aspas da variável 'apiKey' abaixo.
+            // 3. Lembre-se de restringir o uso da chave ao seu domínio do GitHub Pages para segurança.
+            const apiKey = ""; // DEIXE EM BRANCO "" para testar aqui. COLE SUA CHAVE AQUI para o site publicado.
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            
             const payload = {
                 contents: history,
                 systemInstruction: { parts: [{ text: systemInstruction }] }
@@ -1105,7 +1111,7 @@
                 return result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar a sua resposta.";
             } catch (error) {
                 console.error('Error calling Gemini API:', error);
-                return "Ocorreu um erro ao conectar com a IA. Por favor, tente novamente.";
+                return "Ocorreu um erro ao conectar com a IA. Verifique se a chave de API está configurada corretamente para o site publicado.";
             }
         }
 
