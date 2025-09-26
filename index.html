@@ -4,73 +4,80 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Timer Evereste v2.0 | Potencialize sua Produtividade</title>
+    <title>Timer Evereste</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
 
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        
+        /* Estilo para a barra de scroll */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #1e293b; }
         ::-webkit-scrollbar-thumb { background: #4f46e5; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #6366f1; }
 
+        /* Animações */
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
         .chat-bubble { max-width: 80%; }
-
         .tag-color { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        #chat-modal { position: fixed; z-index: 100; right: 1.5rem; top: 5rem; }
         
-        @keyframes pulse-red {
-            0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); }
-            50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-        }
-        .pulse-red-animate { animation: pulse-red 2s infinite; }
-
-        @keyframes pulse-green {
-             0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7); }
-            50% { box-shadow: 0 0 0 8px rgba(34, 197, 94, 0); }
-        }
-        .pulse-green-animate { animation: pulse-green 2s infinite; }
-        
-        #open-chat-btn { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 100; cursor: move; touch-action: none; }
-        #chat-modal { position: fixed; z-index: 100; }
-
+        /* Estilos para o Date Range Picker */
         .daterangepicker { background-color: #374151 !important; border-color: #4b5563 !important; }
         .daterangepicker .calendar-table { background-color: #374151 !important; }
         .daterangepicker th, .daterangepicker td { color: #d1d5db !important; }
         .daterangepicker .off, .daterangepicker .off.in-range, .daterangepicker .off.start-date, .daterangepicker .off.end-date { background-color: #1f2937 !important; color: #6b7280 !important; }
         .daterangepicker .drp-buttons .btn { background-color: #4f46e5 !important; border-color: #4f46e5 !important; color: white !important; }
         .daterangepicker .drp-buttons .btn-default { background-color: #4b5563 !important; border-color: #4b5563 !important; }
+        
+         .typing-indicator { display: flex; align-items: center; justify-content: center; }
+        .typing-indicator span { height: 8px; width: 8px; margin: 0 2px; background-color: #9ca3af; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
+        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
+        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
+        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
+        .pomodoro-cycle { width: 1.5rem; height: 1.5rem; border-radius: 50%; transition: background-color 0.3s ease; }
 
-        .tutorial-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.6); z-index: 9998; }
-        .tutorial-highlight { position: absolute; border: 3px solid #6366f1; border-radius: 8px; box-shadow: 0 0 15px #6366f1, 0 0 0 9999px rgba(0, 0, 0, 0.6); z-index: 9999; transition: all 0.4s ease-in-out; }
-        .tutorial-modal { position: absolute; background-color: #1f2937; border: 1px solid #4b5563; color: #d1d5db; padding: 20px; border-radius: 12px; max-width: 350px; z-index: 10000; box-shadow: 0 10px 25px rgba(0,0,0,0.3); transition: all 0.4s ease-in-out; }
+        /* Estilos do Tutorial */
+        .tutorial-highlight {
+            position: relative;
+            z-index: 101; /* Acima do backdrop do modal (z-100) */
+            transition: all 0.3s ease-in-out;
+            border-radius: 8px;
+            background: inherit;
+        }
+        .tutorial-highlight::after {
+            content: '';
+            position: absolute;
+            inset: -8px;
+            border: 3px solid #6366f1;
+            border-radius: 16px;
+            animation: pulse-border 2s infinite;
+            pointer-events: none;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+        }
+
+        @keyframes pulse-border {
+            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
+            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
+        }
     </style>
 </head>
 
 <body class="bg-gray-900 text-gray-200 font-sans antialiased">
 
-    <!-- Tela de Autenticação -->
+    <!-- Ecrã de Autenticação -->
     <div id="auth-container" class="min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-900 to-blue-900 p-4">
         <div id="auth-box" class="w-full max-w-md bg-gray-800 bg-opacity-50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 space-y-6">
             <div class="text-center">
-                <img src="https://i.postimg.cc/vHwmvFrG/logo-evereste-2025-horizontal-2.png" alt="Logotipo Evereste" class="w-48 mx-auto mb-6">
+                <img src="https://i.postimg.cc/vHwmvFrG/logo-evereste-2025-horizontal-2.png" alt="Logótipo Evereste" class="w-48 mx-auto mb-6">
                 <h2 id="auth-title" class="text-2xl font-bold text-white">Bem-vindo de volta!</h2>
-                <p class="text-gray-400">Faça login para continuar</p>
+                <p class="text-gray-400">Inicie sessão para continuar</p>
             </div>
             <form id="auth-form" class="space-y-4">
-                <input type="text" id="full-name" placeholder="Nome Completo (Ex: João Silva)" class="hidden w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition">
                 <input type="email" id="email" placeholder="E-mail" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
                 <div class="relative">
                     <input type="password" id="password" placeholder="Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 transition" required>
@@ -88,19 +95,20 @@
         </div>
     </div>
 
-    <!-- Tela Principal da Aplicação -->
+    <!-- Ecrã Principal da Aplicação -->
     <div id="app-container" class="hidden min-h-screen">
+        <!-- Cabeçalho -->
         <header class="bg-gray-800/50 backdrop-blur-sm sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-700">
-             <div class="flex items-center gap-4">
-                <img src="https://i.postimg.cc/vHwmvFrG/logo-evereste-2025-horizontal-2.png" alt="Logo" class="h-8">
-                <p class="hidden sm:block"><span id="user-display-name" class="font-bold text-indigo-400"></span></p>
-            </div>
-            <div class="flex items-center space-x-4">
-                <button id="start-tutorial-btn" title="Iniciar Tutorial" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-yellow-400 hover:bg-gray-600 transition">
+            <h1 class="text-xl font-bold text-white">Timer <span class="text-indigo-400">Evereste</span></h1>
+            <div class="flex items-center space-x-2">
+                 <button id="tutorial-button" title="Tutorial" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
                     <i class="fas fa-question-circle"></i>
                 </button>
-                <button id="profile-button" title="Meu Perfil" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition overflow-hidden">
-                    <img id="profile-pic-header" src="https://placehold.co/40x40/4b5563/FFFFFF?text=P" alt="Foto de Perfil" class="w-full h-full object-cover">
+                 <button id="open-chat-menu-btn" title="Yeti Assistente" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 transition overflow-hidden p-1">
+                    <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti Assistente" class="w-full h-full object-cover rounded-full">
+                </button>
+                <button id="profile-button" title="Meu Perfil" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
+                    <i class="fas fa-user"></i>
                 </button>
                  <button id="logout-button" title="Sair" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-red-400 hover:bg-gray-600 transition">
                     <i class="fas fa-sign-out-alt"></i>
@@ -108,6 +116,7 @@
             </div>
         </header>
 
+        <!-- Navegação -->
         <nav class="p-4 bg-gray-900 flex justify-center space-x-2 md:space-x-4">
             <button data-view="timer-view" class="nav-button bg-indigo-600 px-4 py-2 rounded-lg text-sm font-semibold transition hover:bg-indigo-700">
                 <i class="fas fa-clock mr-2"></i>Timer
@@ -120,186 +129,152 @@
             </button>
         </nav>
 
+        <!-- Conteúdo Principal -->
         <main id="main-content" class="p-4 md:p-6">
-            <div id="timer-view" class="view-content fade-in">
-                <div class="flex flex-col lg:flex-row gap-6">
-                    <div class="flex-grow lg:w-2/3 flex flex-col gap-6">
+            <!-- Vista do Timer -->
+            <div id="timer-view" class="view-content fade-in space-y-6">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div class="lg:col-span-2 space-y-6">
+                        <!-- Criação de Tarefa -->
                         <div id="task-creation-container" class="bg-gray-800 p-4 rounded-xl shadow-lg">
                             <h2 class="text-lg font-bold mb-3">Iniciar nova tarefa</h2>
                             <form id="new-task-form" class="flex flex-col md:flex-row gap-3">
                                 <input type="text" id="task-name" placeholder="Nome da tarefa" class="flex-grow px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                                <select id="task-tag" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required></select>
+                                <select id="task-tag" class="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                                   <!-- Options will be populated by JS -->
+                                </select>
                                 <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-5 rounded-lg transition-transform transform hover:scale-105">Iniciar</button>
                             </form>
                              <p id="task-limit-error" class="text-red-400 text-sm mt-2 h-4"></p>
                         </div>
-                        <div class="flex-grow">
-                            <h2 class="text-xl font-bold mb-4">Tarefas Ativas</h2>
-                            <div id="active-tasks-container" class="space-y-4"></div>
-                        </div>
+                        <!-- Tarefas Ativas -->
                         <div>
-                            <h2 class="text-xl font-bold mb-4">Últimas 3 Tarefas Finalizadas</h2>
-                            <div id="recent-history-container" class="bg-gray-800 p-4 rounded-xl shadow-lg space-y-3">
-                                 <p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>
+                            <h2 class="text-xl font-bold mb-4">Tarefas Ativas</h2>
+                            <div id="active-tasks-container" class="space-y-4">
+                                <!-- Tasks will be rendered here -->
                             </div>
                         </div>
                     </div>
-                    <div class="lg:w-1/3 flex flex-col gap-6">
+                    <!-- Pomodoro -->
+                    <div class="space-y-6">
                         <div id="pomodoro-container" class="bg-gray-800 p-4 rounded-xl shadow-lg text-center">
-                            <h2 class="text-lg font-bold mb-1">Sessão Pomodoro</h2>
-                            <p id="pomodoro-status" class="text-sm text-indigo-300 mb-2">Hora de focar!</p>
+                            <h2 id="pomodoro-title" class="text-lg font-bold mb-2">Sessão Pomodoro</h2>
                             <p id="pomodoro-timer" class="text-5xl font-mono font-bold text-indigo-400">25:00</p>
-                             <div id="pomodoro-cycles" class="flex justify-center items-center gap-2 mt-3 text-yellow-400"></div>
+                            <div id="pomodoro-cycles" class="flex justify-center gap-2 my-3"></div>
                             <div class="flex justify-center gap-3 mt-4">
-                                <button id="pomodoro-start" title="Iniciar" class="bg-green-600 hover:bg-green-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-play"></i></button>
-                                <button id="pomodoro-pause" title="Pausar" class="bg-yellow-500 hover:bg-yellow-600 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-pause"></i></button>
-                                <button id="pomodoro-reset" title="Reiniciar" class="bg-red-600 hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-undo"></i></button>
+                                <button id="pomodoro-start-pause" class="bg-green-600 hover:bg-green-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-play"></i></button>
+                                <button id="pomodoro-reset" class="bg-red-600 hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-undo"></i></button>
                             </div>
-                        </div>
-                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
-                             <h2 class="text-lg font-bold mb-3">Central de Ajuda</h2>
-                             <div class="flex items-center gap-4">
-                                <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Timer" class="w-20 h-20">
-                                <p class="text-sm text-gray-300">"O tempo é o recurso mais valioso. Use-o com sabedoria para escalar as suas próprias montanhas."</p>
-                             </div>
-                             <button id="open-timer-help" class="mt-4 w-full bg-indigo-600/50 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition">Dicas de Foco</button>
                         </div>
                     </div>
                 </div>
+                 <!-- Histórico Recente -->
+                <div>
+                    <h2 class="text-xl font-bold mb-4">Últimas 5 Tarefas Finalizadas</h2>
+                    <div id="recent-history-container" class="bg-gray-800 p-4 rounded-xl shadow-lg space-y-3">
+                         <p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>
+                    </div>
+                </div>
             </div>
+
+            <!-- Vista Meu Desempenho -->
             <div id="my-performance-view" class="view-content fade-in hidden"></div>
+
+            <!-- Vista Dashboard da Equipe -->
             <div id="team-dashboard-view" class="view-content fade-in hidden"></div>
         </main>
-        <button id="open-chat-btn" class="bg-indigo-600 hover:bg-indigo-700 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 overflow-hidden p-1">
-            <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Abrir Chat do Yeti" class="w-full h-full object-cover rounded-full">
-        </button>
     </div>
 
-    <!-- MODAIS -->
+    <!-- Modal do Perfil -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
             <button id="close-profile-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
-            <div class="flex flex-col sm:flex-row items-center gap-6 mb-6">
-                <div class="relative group">
-                    <img id="profile-pic-modal" src="https://placehold.co/128x128/4b5563/FFFFFF?text=P" alt="Foto de Perfil" class="w-32 h-32 rounded-full object-cover border-4 border-indigo-500">
-                    <label for="profile-pic-upload" class="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white text-2xl opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                        <i class="fas fa-camera"></i>
-                    </label>
-                    <input type="file" id="profile-pic-upload" class="hidden" accept="image/*">
-                </div>
-                <div>
-                    <h2 id="profile-modal-name" class="text-2xl font-bold"></h2>
-                    <p id="profile-email" class="text-indigo-400"></p>
-                </div>
+            <h2 class="text-2xl font-bold mb-2">Meu Perfil</h2>
+            <p id="profile-email" class="text-indigo-400 mb-6"></p>
+            
+            <div>
+                 <h3 class="text-lg font-semibold mb-4">Desempenho nos Últimos 7 Dias</h3>
+                 <div id="profile-dashboard-container" class="relative min-h-[280px]"></div>
             </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                 <div>
-                     <h3 class="text-lg font-semibold mb-4">Desempenho (Últimos 7 dias)</h3>
-                     <div id="profile-dashboard-container" class="relative min-h-[280px]"></div>
-                </div>
-                <div>
-                    <h3 class="text-lg font-semibold mb-4">Alterar Senha</h3>
-                    <form id="change-password-form" class="space-y-4">
-                        <input type="password" id="new-password" placeholder="Nova Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                        <input type="password" id="confirm-password" placeholder="Confirmar Nova Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
-                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">Salvar Nova Senha</button>
-                        <p id="password-change-feedback" class="text-sm h-4 text-center"></p>
-                    </form>
-                </div>
+
+            <div class="mt-8 pt-6 border-t border-gray-700">
+                <h3 class="text-lg font-semibold mb-4">Alterar Senha</h3>
+                <form id="change-password-form" class="space-y-4">
+                    <input type="password" id="new-password" placeholder="Nova Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <input type="password" id="confirm-password" placeholder="Confirmar Nova Senha" class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500" required>
+                    <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-lg transition">Salvar Nova Senha</button>
+                    <p id="password-change-feedback" class="text-sm h-4 text-center"></p>
+                </form>
             </div>
         </div>
     </div>
     
-    <div id="help-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
-            <button id="close-help-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
-            <div id="help-modal-content"></div>
+    <!-- Modal do Tutorial -->
+    <div id="tutorial-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[100]">
+        <div id="tutorial-box" class="bg-gray-800 w-full max-w-xs rounded-2xl shadow-2xl p-5 absolute fade-in">
+            <!-- O conteúdo do tutorial será injetado aqui -->
         </div>
     </div>
 
-    <div id="chat-modal" class="hidden bottom-24 right-6 w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col fade-in">
+
+    <!-- Modal do Chatbot -->
+    <div id="chat-modal" class="hidden w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col fade-in">
         <div class="flex items-center p-4 bg-gray-900 rounded-t-2xl">
             <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-10 h-10 rounded-full mr-3">
-            <div><h3 class="font-bold">Yeti Assistente</h3><p class="text-xs text-green-400">Online</p></div>
+            <div>
+                <h3 class="font-bold">Yeti Assistente</h3>
+                <p class="text-xs text-green-400">Online</p>
+            </div>
             <button id="close-chat-btn" class="ml-auto text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
         </div>
-        <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4"></div>
+        <div id="chat-messages" class="flex-grow p-4 overflow-y-auto space-y-4">
+            <!-- Messages will be injected here -->
+        </div>
         <form id="chat-form" class="p-4 border-t border-gray-700">
             <div class="flex items-center bg-gray-700 rounded-lg">
                 <input type="text" id="chat-input" placeholder="Pergunte algo..." class="w-full bg-transparent px-4 py-2 focus:outline-none">
-                <button type="submit" class="p-2 text-indigo-400 hover:text-indigo-300"><i class="fas fa-paper-plane"></i></button>
+                <button type="submit" id="chat-submit-btn" class="p-2 text-indigo-400 hover:text-indigo-300"><i class="fas fa-paper-plane"></i></button>
             </div>
         </form>
     </div>
-
-    <div id="confirmation-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-8 text-center fade-in">
-            <div class="text-5xl text-green-400 mb-4"><i class="fas fa-check-circle"></i></div>
-            <h2 class="text-xl font-bold mb-2">Parabéns!</h2>
-            <p id="confirmation-message" class="text-gray-300 mb-6">Finalizou mais uma atividade!</p>
-            <button id="close-confirmation-modal" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition">Fechar</button>
-        </div>
-    </div>
     
-    <div id="edit-time-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl p-6 fade-in">
-            <h2 class="text-xl font-bold mb-2">Editar Tempo da Tarefa</h2>
-            <p id="edit-task-name" class="text-indigo-400 mb-4"></p>
-            <form id="edit-time-form">
-                <input type="hidden" id="edit-task-id">
-                <div class="flex justify-center items-center gap-2 mb-4">
-                    <input type="number" id="edit-hours" min="0" max="99" class="w-20 text-center bg-gray-700 p-2 rounded-lg" placeholder="HH">
-                    <span class="font-bold">:</span>
-                    <input type="number" id="edit-minutes" min="0" max="59" class="w-20 text-center bg-gray-700 p-2 rounded-lg" placeholder="MM">
-                    <span class="font-bold">:</span>
-                    <input type="number" id="edit-seconds" min="0" max="59" class="w-20 text-center bg-gray-700 p-2 rounded-lg" placeholder="SS">
-                </div>
-                <div class="flex justify-end gap-3">
-                    <button type="button" id="close-edit-time-modal" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded-lg">Cancelar</button>
-                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <div id="delete-confirmation-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 w-full max-w-sm rounded-2xl shadow-2xl p-8 text-center fade-in">
-            <div class="text-5xl text-red-400 mb-4"><i class="fas fa-exclamation-triangle"></i></div>
-            <h2 class="text-xl font-bold mb-2">Você tem certeza?</h2>
-            <p class="text-gray-300 mb-6">Esta ação não pode ser desfeita. A atividade será permanentemente excluída.</p>
-            <div class="flex justify-center gap-4">
-                <button id="cancel-delete-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition">Cancelar</button>
-                <button id="confirm-delete-btn" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-6 rounded-lg transition">Excluir</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="tutorial-container" class="hidden">
-        <div id="tutorial-highlight-box" class="tutorial-highlight"></div>
-        <div id="tutorial-modal-box" class="tutorial-modal">
-            <h3 id="tutorial-title" class="font-bold text-lg mb-2"></h3>
-            <p id="tutorial-text" class="text-sm mb-4"></p>
-            <div class="flex justify-between items-center">
-                <button id="tutorial-prev" class="text-gray-400 hover:text-white">&laquo; Anterior</button>
-                <span id="tutorial-step-counter" class="text-xs"></span>
-                <button id="tutorial-next" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-lg">Próximo &raquo;</button>
-            </div>
-             <button id="tutorial-close" class="absolute top-2 right-3 text-gray-400 hover:text-white">&times;</button>
-        </div>
-    </div>
-
     <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
 
     <script type="module">
-        // MÓDULOS FIREBASE
+        // Importar funções do Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged, updatePassword, setPersistence, browserLocalPersistence } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, addDoc, onSnapshot, query, where, orderBy, limit, deleteDoc, getDocs, Timestamp, collectionGroup, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+        import {
+            getAuth,
+            createUserWithEmailAndPassword,
+            signInWithEmailAndPassword,
+            signOut,
+            onAuthStateChanged,
+            updatePassword
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            doc,
+            setDoc,
+            getDoc,
+            collection,
+            addDoc,
+            onSnapshot,
+            query,
+            where,
+            orderBy,
+            limit,
+            deleteDoc,
+            getDocs,
+            Timestamp,
+            collectionGroup,
+            updateDoc
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIG FIREBASE
+        // =================================================================================
+        // 1. CONFIGURAÇÃO DO FIREBASE
+        // =================================================================================
         const firebaseConfig = {
             apiKey: "AIzaSyCeEYuehK-AruCIV_zhNDDQ1ng5U1eIzqI",
             authDomain: "timerevereste.firebaseapp.com",
@@ -310,24 +285,28 @@
             measurementId: "G-K1YGJ0NHCL"
         };
         
-        // INICIALIZAÇÃO FIREBASE
+        // =================================================================================
+        // 2. INICIALIZAÇÃO E VARIÁVEIS GLOBAIS
+        // =================================================================================
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        const storage = getStorage(app);
 
-        // --- VARIÁVEIS GLOBAIS ---
-        const appId = 'default-app-id'; 
         let currentUser = null;
         let activeTasks = [];
+        let recentHistory = [];
         let timerIntervals = {};
         let unsubscribeActiveTasks = null;
         let unsubscribeRecentHistory = null;
         let chatHistory = [];
-        let currentUserProfile = {};
+        let currentUserName = '';
         
-        // --- TAGS (CATEGORIAS) ---
-        const TAG_OPTIONS = [ { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Web Design', color: 'bg-green-200 text-green-800' }, { name: 'UX', color: 'bg-green-200 text-green-800' }, { name: 'UI', color: 'bg-green-200 text-green-800' }, { name: 'App', color: 'bg-green-200 text-green-800' }, { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' }, { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' }, { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' }, { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' }, { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' }, { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' }, { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' }, { name: 'Evento', color: 'bg-purple-200 text-purple-800' }, { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' }, { name: 'Portal', color: 'bg-pink-200 text-pink-800' }, { name: 'E-mail', color: 'bg-pink-200 text-pink-800' }, { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' }, { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' }, { name: 'Instagram', color: 'bg-pink-200 text-pink-800' }, { name: 'Youtube', color: 'bg-pink-200 text-pink-800' }, { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' }, { name: 'Flickr', color: 'bg-pink-200 text-pink-800' }, { name: 'Facebook', color: 'bg-pink-200 text-pink-800' }, { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' }, { name: 'Impressão', color: 'bg-pink-200 text-pink-800' }, { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' }, { name: 'Documento', color: 'bg-red-200 text-red-800' }, { name: 'Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'Agendamento', color: 'bg-red-200 text-red-800' }, { name: 'Reunião', color: 'bg-red-200 text-red-800' }, { name: 'Planejamento', color: 'bg-red-200 text-red-800' }, { name: 'Treinamento', color: 'bg-red-200 text-red-800' }, { name: 'Pesquisa', color: 'bg-red-200 text-red-800' }, { name: 'Notícia', color: 'bg-red-200 text-red-800' }, { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' }, { name: 'Apresentação', color: 'bg-red-200 text-red-800' }, { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' }, { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' }, { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' }, { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' }, { name: 'Social Media', color: 'bg-orange-200 text-orange-800' }, { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' }, { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' }, { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' }, { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' }, ];
+        const TAG_OPTIONS = [
+            { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Web Design', color: 'bg-green-200 text-green-800' }, { name: 'UX', color: 'bg-green-200 text-green-800' }, { name: 'UI', color: 'bg-green-200 text-green-800' }, { name: 'App', color: 'bg-green-200 text-green-800' }, { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' }, { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' }, { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' }, { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' }, { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' }, { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' }, { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' }, { name: 'Evento', color: 'bg-purple-200 text-purple-800' }, { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' }, { name: 'Portal', color: 'bg-pink-200 text-pink-800' }, { name: 'E-mail', color: 'bg-pink-200 text-pink-800' }, { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' }, { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' }, { name: 'Instagram', color: 'bg-pink-200 text-pink-800' }, { name: 'Youtube', color: 'bg-pink-200 text-pink-800' }, { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' }, { name: 'Flickr', color: 'bg-pink-200 text-pink-800' }, { name: 'Facebook', color: 'bg-pink-200 text-pink-800' }, { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' }, { name: 'Impressão', color: 'bg-pink-200 text-pink-800' }, { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' }, { name: 'Documento', color: 'bg-red-200 text-red-800' }, { name: 'Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'Agendamento', color: 'bg-red-200 text-red-800' }, { name: 'Reunião', color: 'bg-red-200 text-red-800' }, { name: 'Planejamento', color: 'bg-red-200 text-red-800' }, { name: 'Treinamento', color: 'bg-red-200 text-red-800' }, { name: 'Pesquisa', color: 'bg-red-200 text-red-800' }, { name: 'Notícia', color: 'bg-red-200 text-red-800' }, { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' }, { name: 'Apresentação', color: 'bg-red-200 text-red-800' }, { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' }, { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' }, { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' }, { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' }, { name: 'Social Media', color: 'bg-orange-200 text-orange-800' }, { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' }, { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' }, { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' }, { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' },
+        ];
+
+
+        // Popular as tags
         const taskTagSelect = document.getElementById('task-tag');
         TAG_OPTIONS.forEach(tag => {
             const option = document.createElement('option');
@@ -335,63 +314,110 @@
             option.textContent = tag.name;
             taskTagSelect.appendChild(option);
         });
+        
         function getTagColor(tagName) {
             const tag = TAG_OPTIONS.find(t => t.name === tagName);
             return tag ? tag.color : 'bg-gray-500 text-gray-100';
         }
 
-        // --- UTILIDADES ---
-        function getFirstName(profile) {
-            if (profile && profile.displayName) {
-                return profile.displayName.split(' ')[0];
-            }
-            if (currentUser && currentUser.email) {
-                const nameFromEmail = currentUser.email.split('@')[0].split('.')[0].split('-')[0];
-                return nameFromEmail.charAt(0).toUpperCase() + nameFromEmail.slice(1);
-            }
-            return 'Usuário';
-        }
-        function formatTime(totalSeconds) {
-            if(isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
-            const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
-            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
-            const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
-            return `${h}:${m}:${s}`;
-        }
-        function generateColors(numColors) {
-            const colors = ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'];
-            return Array.from({length: numColors}, (_, i) => colors[i % colors.length]);
-        }
-        function showConfirmationModal(message) {
-            document.getElementById('confirmation-message').textContent = message;
-            document.getElementById('confirmation-modal').classList.remove('hidden');
-        }
-        document.getElementById('close-confirmation-modal').addEventListener('click', () => {
-             document.getElementById('confirmation-modal').classList.add('hidden');
+        // =================================================================================
+        // 3. UTILITÁRIOS E GESTÃO DE ESTADO
+        // =================================================================================
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const appContainer = document.getElementById('app-container');
+            const authContainer = document.getElementById('auth-container');
+            
+            appContainer.addEventListener('click', async (event) => {
+                const target = event.target;
+                const deleteButton = target.closest('.delete-history-btn');
+                const editButton = target.closest('.edit-history-btn');
+                const saveButton = target.closest('.save-history-btn');
+                const cancelButton = target.closest('.cancel-edit-btn');
+
+                if (deleteButton && !deleteButton.disabled) handleDeleteHistory(deleteButton);
+                else if (editButton) handleEditHistory(editButton);
+                else if (saveButton) handleSaveHistory(saveButton);
+                else if (cancelButton) handleCancelEditHistory(cancelButton);
+            });
+            
+            document.querySelectorAll('.nav-button').forEach(button => {
+                button.addEventListener('click', () => {
+                    const viewId = button.dataset.view;
+                    document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
+                    document.getElementById(viewId).classList.remove('hidden');
+                    document.querySelectorAll('.nav-button').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-gray-700'));
+                    button.classList.replace('bg-gray-700', 'bg-indigo-600');
+                    if (viewId === 'my-performance-view') loadMyPerformanceDashboard();
+                    if (viewId === 'team-dashboard-view') loadTeamDashboard();
+                });
+            });
+            
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    currentUser = user;
+                    if (user.email) {
+                        const namePart = user.email.split('@')[0];
+                        const firstName = namePart.split('.')[0].split('-')[0];
+                        currentUserName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+                    } else {
+                        currentUserName = 'Usuário';
+                    }
+
+                    authContainer.classList.add('hidden');
+                    appContainer.classList.remove('hidden');
+                    loadUserProfile();
+                    setupListeners();
+                    loadPomodoroState();
+                    
+                    if (!localStorage.getItem(`tutorial_shown_${user.uid}`)) {
+                        openTutorialModal();
+                    }
+
+                    chatHistory = [];
+                    const welcomeMessage = `Olá, <b>${currentUserName}</b>! Eu sou o Yeti, seu assistente de produtividade. Como posso ajudar?`;
+                    addBotMessage(welcomeMessage, false);
+                    chatHistory.push({ role: "model", parts: [{ text: welcomeMessage }] });
+
+                } else {
+                    currentUser = null;
+                    currentUserName = '';
+                    authContainer.classList.remove('hidden');
+                    appContainer.classList.add('hidden');
+                    cleanupListeners();
+                    clearUI();
+                    chatHistory = [];
+                }
+            });
         });
 
-        // --- GESTÃO DE ESTADO DA UI E LISTENERS ---
+
         function setupListeners() {
             if (!currentUser) return;
             cleanupListeners();
-            const activeTasksQuery = query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/active_tasks`));
+            const activeTasksQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`));
             unsubscribeActiveTasks = onSnapshot(activeTasksQuery, (snapshot) => {
-                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                activeTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 Object.values(timerIntervals).forEach(clearInterval);
                 timerIntervals = {};
-                renderActiveTasks(tasks);
+                renderActiveTasks(activeTasks);
             });
-            const recentHistoryQuery = query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(3));
+            const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
             unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
-                 renderRecentHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+                 recentHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                 renderRecentHistory(recentHistory);
+            }, (error) => {
+                console.error("Falha ao carregar o histórico recente: ", error);
             });
         }
+
         function cleanupListeners() {
             if (unsubscribeActiveTasks) unsubscribeActiveTasks();
             if (unsubscribeRecentHistory) unsubscribeRecentHistory();
             Object.values(timerIntervals).forEach(clearInterval);
             timerIntervals = {};
         }
+        
         function clearUI() {
             document.getElementById('active-tasks-container').innerHTML = '';
             document.getElementById('recent-history-container').innerHTML = `<p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>`;
@@ -399,145 +425,138 @@
             document.getElementById('team-dashboard-view').innerHTML = '';
             document.querySelector('[data-view="timer-view"]').click();
         }
-        document.querySelectorAll('.nav-button').forEach(button => {
-            button.addEventListener('click', () => {
-                document.querySelectorAll('.view-content').forEach(view => view.classList.add('hidden'));
-                document.getElementById(button.dataset.view).classList.remove('hidden');
-                document.querySelectorAll('.nav-button').forEach(btn => btn.classList.replace('bg-indigo-600', 'bg-gray-700'));
-                button.classList.replace('bg-gray-700', 'bg-indigo-600');
-                if (button.dataset.view === 'my-performance-view') loadMyPerformanceDashboard();
-                if (button.dataset.view === 'team-dashboard-view') loadTeamDashboard();
-            });
-        });
 
-        // --- LÓGICA DE AUTENTICAÇÃO ---
-        const authContainer = document.getElementById('auth-container');
+        function formatTime(totalSeconds) {
+            if(isNaN(totalSeconds) || totalSeconds < 0) return "00:00:00";
+            const h = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const m = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const s = Math.floor(totalSeconds % 60).toString().padStart(2, '0');
+            return `${h}:${m}:${s}`;
+        }
+        
+        function generateColors(numColors) {
+            const colors = ['#4f46e5', '#7c3aed', '#db2777', '#f97316', '#eab308', '#84cc16', '#10b981', '#06b6d4', '#3b82f6'];
+            return Array.from({length: numColors}, (_, i) => colors[i % colors.length]);
+        }
+        
+        // =================================================================================
+        // 4. LÓGICA DE AUTENTICAÇÃO
+        // =================================================================================
+        const authForm = document.getElementById('auth-form');
+        const authError = document.getElementById('auth-error');
+        const toggleAuthModeLink = document.getElementById('toggle-auth-mode');
+        const authTitle = document.getElementById('auth-title');
+        let isLoginMode = true;
+        const authPromptText = document.getElementById('auth-prompt-text');
+        const authButton = document.getElementById('auth-button');
         const togglePassword = document.getElementById('toggle-password');
+
         togglePassword.addEventListener('click', () => {
             const passwordInput = document.getElementById('password');
             const icon = togglePassword.querySelector('i');
-            if (passwordInput.type === 'password') {
-                passwordInput.type = 'text';
-                icon.classList.replace('fa-eye', 'fa-eye-slash');
-            } else {
-                passwordInput.type = 'password';
-                icon.classList.replace('fa-eye-slash', 'fa-eye');
-            }
+            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
+            icon.classList.toggle('fa-eye');
+            icon.classList.toggle('fa-eye-slash');
         });
-
-        let isLoginMode = true;
-        document.getElementById('toggle-auth-mode').addEventListener('click', (e) => {
+        
+        toggleAuthModeLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
-            document.getElementById('auth-error').textContent = '';
-            document.getElementById('auth-form').reset();
-            const fullNameInput = document.getElementById('full-name');
-            if (isLoginMode) {
-                fullNameInput.classList.add('hidden');
-                fullNameInput.required = false;
-                document.getElementById('auth-title').textContent = 'Bem-vindo de volta!';
-                document.getElementById('auth-button').textContent = 'Entrar';
-                document.getElementById('auth-prompt-text').textContent = 'Não tem uma conta?';
-                document.getElementById('toggle-auth-mode').textContent = 'Registrar-se';
-            } else {
-                fullNameInput.classList.remove('hidden');
-                fullNameInput.required = true;
-                document.getElementById('auth-title').textContent = 'Crie a sua conta';
-                document.getElementById('auth-button').textContent = 'Registrar';
-                document.getElementById('auth-prompt-text').textContent = 'Já tem uma conta?';
-                document.getElementById('toggle-auth-mode').textContent = 'Entrar';
-            }
+            authError.textContent = '';
+            authForm.reset();
+            authTitle.textContent = isLoginMode ? 'Bem-vindo de volta!' : 'Crie a sua conta';
+            authButton.textContent = isLoginMode ? 'Entrar' : 'Registrar';
+            authPromptText.textContent = isLoginMode ? 'Não tem uma conta?' : 'Já tem uma conta?';
+            toggleAuthModeLink.textContent = isLoginMode ? 'Registrar-se' : 'Entrar';
         });
-
-        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+        
+        authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const fullName = document.getElementById('full-name').value;
-            const authError = document.getElementById('auth-error');
             authError.textContent = '';
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
                 } else {
                     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await setDoc(doc(db, `artifacts/${appId}/users/${userCredential.user.uid}`), { 
-                        email: userCredential.user.email,
-                        displayName: fullName,
-                        profilePicUrl: null 
-                    });
+                    const userProfileRef = doc(db, `artifacts/default-app-id/users/${userCredential.user.uid}/profile/settings`);
+                    await setDoc(userProfileRef, { email: userCredential.user.email });
                 }
-            } catch (error) { authError.textContent = 'Credenciais inválidas ou e-mail já em uso.'; }
+            } catch (error) {
+                console.error("Authentication error:", error);
+                handleAuthError(error);
+            }
         });
 
-        setPersistence(auth, browserLocalPersistence); 
-        
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                currentUser = user;
-                await loadUserProfile();
-                authContainer.classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                setupListeners();
-                
-                chatHistory = [];
-                const firstName = getFirstName(currentUserProfile);
-                const welcomeMessage = `Olá, <b>${firstName}</b>! Eu sou o Yeti. Como posso ajudar?`;
-                addBotMessage(welcomeMessage);
-                chatHistory.push({ role: "model", parts: [{ text: welcomeMessage }] });
-            } else {
-                currentUser = null;
-                currentUserProfile = {};
-                authContainer.classList.remove('hidden');
-                document.getElementById('app-container').classList.add('hidden');
-                cleanupListeners();
-                clearUI();
-                chatHistory = [];
+        function handleAuthError(error) {
+             switch (error.code) {
+                case 'auth/invalid-email': authError.textContent = 'Formato de e-mail inválido.'; break;
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    authError.textContent = 'E-mail ou senha incorretos.'; 
+                    break;
+                case 'auth/email-already-in-use': authError.textContent = 'Este e-mail já está a ser utilizado.'; break;
+                case 'auth/weak-password': authError.textContent = 'A senha deve ter pelo menos 6 caracteres.'; break;
+                default: authError.textContent = 'Ocorreu um erro. Tente novamente.'; break;
             }
-        });
+        }
+
+        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+
+        // =================================================================================
+        // 5. LÓGICA DO TIMER E GESTÃO DE TAREFAS
+        // =================================================================================
+        const newTaskForm = document.getElementById('new-task-form');
+        const taskLimitError = document.getElementById('task-limit-error');
+        const activeTasksContainer = document.getElementById('active-tasks-container');
         
-        // --- LÓGICA DO TIMER E TAREFAS ---
-        document.getElementById('new-task-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
+        newTaskForm.addEventListener('submit', async (e) => {
+             e.preventDefault();
             if (activeTasks.length >= 3) {
-                document.getElementById('task-limit-error').textContent = 'Pode ter no máximo 3 tarefas ativas.';
-                setTimeout(() => document.getElementById('task-limit-error').textContent = '', 3000);
+                taskLimitError.textContent = 'Pode ter no máximo 3 tarefas ativas.';
+                setTimeout(() => taskLimitError.textContent = '', 3000);
                 return;
             }
+
             const taskName = document.getElementById('task-name').value;
             const taskTag = document.getElementById('task-tag').value;
+
             const newTask = { name: taskName, tag: taskTag, ownerId: currentUser.uid, status: 'paused', startTime: Timestamp.now(), lastStartTime: null, totalActiveTime: 0, totalPausedTime: 0, pauseCount: 0, lastPauseTime: Timestamp.now() };
-            await addDoc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/active_tasks`), newTask);
-            document.getElementById('new-task-form').reset();
+
+            try {
+                const collectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`);
+                await addDoc(collectionRef, newTask);
+                newTaskForm.reset();
+            } catch (error) { console.error("Error adding new task:", error); }
         });
 
         function startTimer(task) {
             if (timerIntervals[task.id]) return;
-            const timerElement = document.getElementById(`timer-${task.id}`);
-            if (!timerElement) return;
-
             timerIntervals[task.id] = setInterval(() => {
-                const elapsedSinceLastStart = Math.floor(Date.now() / 1000) - task.lastStartTime.seconds;
-                const newTotalActiveTime = task.totalActiveTime + elapsedSinceLastStart;
-                timerElement.textContent = formatTime(newTotalActiveTime);
+                task.totalActiveTime++;
+                const timerElement = document.getElementById(`timer-${task.id}`);
+                if (timerElement) timerElement.textContent = formatTime(task.totalActiveTime);
             }, 1000);
         }
 
         function pauseTimer(taskId) {
-            clearInterval(timerIntervals[taskId]);
+             clearInterval(timerIntervals[taskId]);
             delete timerIntervals[taskId];
         }
 
         async function updateTaskInFirestore(taskId, updates) {
             if (!currentUser) return;
-            const taskRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/active_tasks`, taskId);
-            await updateDoc(taskRef, updates);
+            const taskRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, taskId);
+            await setDoc(taskRef, updates, { merge: true });
         }
         
         async function continueTask(taskToContinue) {
-            await Promise.all(activeTasks.map(task => {
+             await Promise.all(activeTasks.map(task => {
                 if (task.id !== taskToContinue.id && task.status === 'running') return pauseTask(task);
             }));
+
             const now = Timestamp.now();
             const pauseDuration = now.seconds - taskToContinue.lastPauseTime.seconds;
             await updateTaskInFirestore(taskToContinue.id, { status: 'running', lastStartTime: now, totalPausedTime: taskToContinue.totalPausedTime + pauseDuration });
@@ -551,54 +570,67 @@
 
         async function finishTask(taskToFinish) {
             pauseTimer(taskToFinish.id);
+            const now = Timestamp.now();
             let finalActiveTime = taskToFinish.totalActiveTime;
+
             if (taskToFinish.status === 'running') {
-                 finalActiveTime += (Math.floor(Date.now() / 1000) - taskToFinish.lastStartTime.seconds);
+                 finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
             }
+
             const { id, ...taskData } = taskToFinish;
-            const finishedTask = { ...taskData, userName: currentUserProfile.displayName, userEmail: currentUser.email, endTime: Timestamp.now(), totalActiveTime: finalActiveTime };
-            delete finishedTask.status; delete finishedTask.lastStartTime; delete finishedTask.lastPauseTime;
+            const finishedTask = { 
+                ...taskData,
+                userEmail: currentUser.email, 
+                endTime: now,
+                totalActiveTime: finalActiveTime 
+            };
             
-            await addDoc(collection(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`), finishedTask);
-            await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/active_tasks`, id));
+            delete finishedTask.status;
+            delete finishedTask.lastStartTime;
+            delete finishedTask.lastPauseTime;
             
-            showConfirmationModal(`Parabéns, você finalizou a tarefa "${taskToFinish.name}"!`);
+            try {
+                await addDoc(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), finishedTask);
+                await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, id));
+            } catch(error) { 
+                console.error("Erro ao finalizar a tarefa: ", error); 
+            }
         }
-        
+
         function renderActiveTasks(tasks) {
             activeTasks = tasks;
-            const container = document.getElementById('active-tasks-container');
-            container.innerHTML = tasks.length === 0 ? `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>` : '';
+            activeTasksContainer.innerHTML = tasks.length === 0 ? `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>` : '';
             
             tasks.forEach(task => {
                 const isRunning = task.status === 'running';
                 let displayTime = task.totalActiveTime;
                 if(isRunning && task.lastStartTime) displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
+                const tagColor = getTagColor(task.tag);
                 
-                const cardPulseClass = !isRunning ? 'pulse-green-animate' : '';
-
                 const taskCard = document.createElement('div');
-                taskCard.id = `task-card-${task.id}`;
-                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'} ${cardPulseClass}`;
+                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'}`;
                 taskCard.innerHTML = `
                     <div class="flex-grow text-center md:text-left">
-                         <h3 class="font-bold text-lg">${task.name}</h3>
-                        <p class="tag-color ${getTagColor(task.tag)}">${task.tag}</p>
+                        <div class="flex items-center gap-3">
+                             ${isRunning ? '<span class="text-xs font-bold uppercase bg-green-500 text-gray-900 px-2 py-1 rounded">ATIVA</span>' : ''}
+                            <h3 class="font-bold text-lg">${task.name || 'Tarefa sem nome'}</h3>
+                        </div>
+                        <p class="tag-color ${tagColor}">${task.tag}</p>
                     </div>
                     <div class="flex items-center gap-4">
                         <div class="text-center"><p class="text-2xl md:text-3xl font-mono" id="timer-${task.id}">${formatTime(displayTime)}</p><p class="text-xs text-gray-400">Tempo Ativo</p></div>
                         <div class="text-center"><p class="text-2xl md:text-3xl font-mono">${task.pauseCount}</p><p class="text-xs text-gray-400">Pausas</p></div>
                     </div>
                     <div class="flex gap-2">
-                        <button class="${isRunning ? 'pause-btn bg-yellow-500' : 'continue-btn bg-green-600'}" title="${isRunning ? 'Pausar' : 'Continuar'}"><i class="fas fa-${isRunning ? 'pause' : 'play'}"></i></button>
-                        <button class="finish-btn bg-red-600" title="Finalizar"><i class="fas fa-check"></i></button>
+                        <button class="${isRunning ? 'pause-btn bg-yellow-500 hover:bg-yellow-600' : 'continue-btn bg-green-600 hover:bg-green-700'}" title="${isRunning ? 'Pausar' : 'Continuar'}"><i class="fas fa-${isRunning ? 'pause' : 'play'}"></i></button>
+                        <button class="finish-btn bg-red-600 hover:bg-red-700" title="Finalizar"><i class="fas fa-check"></i></button>
                     </div>`;
-                taskCard.querySelectorAll('button').forEach(btn => btn.classList.add('text-white', 'w-12', 'h-12', 'rounded-lg', 'transition', 'hover:opacity-80'));
-                container.appendChild(taskCard);
+                taskCard.querySelectorAll('button').forEach(btn => btn.classList.add('text-white', 'font-bold', 'py-2', 'px-4', 'rounded-lg', 'transition'));
+                activeTasksContainer.appendChild(taskCard);
 
                 if(isRunning) {
                     taskCard.querySelector('.pause-btn').addEventListener('click', () => pauseTask(task));
-                    startTimer(task);
+                    startTimer({ ...task, totalActiveTime: displayTime });
                 } else {
                     taskCard.querySelector('.continue-btn').addEventListener('click', () => continueTask(task));
                     pauseTimer(task.id);
@@ -609,366 +641,180 @@
         
         function renderRecentHistory(entries) {
             const container = document.getElementById('recent-history-container');
-            container.innerHTML = `<p id="no-recent-history" class="text-gray-400 ${entries.length > 0 ? 'hidden' : ''}">Nenhuma tarefa finalizada recentemente.</p>`;
+            container.innerHTML = `<p id="no-recent-history" class="text-gray-400 ${entries.length > 0 ? 'hidden' : ''}">Ainda não há tarefas finalizadas.</p>`;
             entries.forEach(entry => {
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'bg-gray-700 p-4 rounded-lg';
-                entryDiv.innerHTML = `
-                     <div class="flex justify-between items-start w-full">
-                        <div><p class="font-semibold text-base">${entry.name}</p><p class="tag-color ${getTagColor(entry.tag)}">${entry.tag}</p></div>
-                        <div class="text-right flex-shrink-0 ml-4">
-                            <p class="font-mono text-xl">${formatTime(entry.totalActiveTime)}</p>
-                            <p class="text-xs text-gray-400">Tempo Total</p>
-                        </div>
-                    </div>
-                    <div class="mt-3 pt-3 border-t border-gray-600/50 text-xs text-gray-400 flex justify-between items-center">
-                         <p>${new Date(entry.endTime.seconds * 1000).toLocaleDateString()}</p>
-                         <div class="flex items-center gap-4">
-                            <button class="edit-history-btn text-gray-400 hover:text-yellow-400 text-lg" data-id="${entry.id}" title="Editar tempo"><i class="fas fa-pencil-alt"></i></button>
-                            <button class="delete-history-btn text-gray-400 hover:text-red-400 text-lg" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>`;
+                entryDiv.dataset.id = entry.id;
+                entryDiv.innerHTML = generateHistoryEntryHTML(entry);
                 container.appendChild(entryDiv);
-                entryDiv.querySelector('.edit-history-btn').addEventListener('click', () => openEditTimeModal(entry));
             });
         }
+
+        function generateHistoryEntryHTML(entry) {
+            const tagColor = getTagColor(entry.tag);
+            const taskEndDate = new Date(entry.endTime.seconds * 1000);
+            const taskStartDate = new Date(entry.startTime.seconds * 1000);
+            return `
+                 <div class="flex justify-between items-start w-full">
+                    <div>
+                        <p class="font-semibold text-base">${entry.name}</p>
+                        <p class="tag-color ${tagColor}">${entry.tag}</p>
+                    </div>
+                    <div class="text-right flex-shrink-0 ml-4">
+                        <p class="font-mono text-xl">${formatTime(entry.totalActiveTime)}</p>
+                        <p class="text-xs text-gray-400">Tempo Total</p>
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-gray-600/50 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 items-center">
+                    <div><p class="font-bold">Início:</p><p>${taskStartDate.toLocaleDateString()} ${taskStartDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div>
+                    <div><p class="font-bold">Fim:</p><p>${taskEndDate.toLocaleDateString()} ${taskEndDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div>
+                    <div><p class="font-bold">Pausas:</p><p>${entry.pauseCount}</p></div>
+                    <div class="flex justify-end gap-2">
+                        <button class="edit-history-btn text-gray-500 hover:text-indigo-400 text-lg" data-id="${entry.id}" title="Editar"><i class="fas fa-edit"></i></button>
+                        <button class="delete-history-btn text-gray-500 hover:text-red-400 text-lg" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>`;
+        }
         
-        function openEditTimeModal(entry) {
-            document.getElementById('edit-task-id').value = entry.id;
-            document.getElementById('edit-task-name').textContent = entry.name;
-            const time = formatTime(entry.totalActiveTime).split(':');
-            document.getElementById('edit-hours').value = time[0];
-            document.getElementById('edit-minutes').value = time[1];
-            document.getElementById('edit-seconds').value = time[2];
-            document.getElementById('edit-time-modal').classList.remove('hidden');
-        }
-        document.getElementById('close-edit-time-modal').addEventListener('click', () => {
-             document.getElementById('edit-time-modal').classList.add('hidden');
-        });
-        document.getElementById('edit-time-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('edit-task-id').value;
-            const h = parseInt(document.getElementById('edit-hours').value) || 0;
-            const m = parseInt(document.getElementById('edit-minutes').value) || 0;
-            const s = parseInt(document.getElementById('edit-seconds').value) || 0;
-            const newTotalTime = (h * 3600) + (m * 60) + s;
-            
-            const entryRef = doc(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`, id);
-            await updateDoc(entryRef, { totalActiveTime: newTotalTime });
-            document.getElementById('edit-time-modal').classList.add('hidden');
-        });
-
-        document.getElementById('main-content').addEventListener('click', (event) => {
-            const deleteButton = event.target.closest('.delete-history-btn');
-            if (deleteButton) {
-                const entryId = deleteButton.dataset.id;
-                promptForDelete(entryId);
-            }
-        });
-
-        function promptForDelete(entryId) {
-            const modal = document.getElementById('delete-confirmation-modal');
-            modal.dataset.entryId = entryId;
-            modal.classList.remove('hidden');
-        }
-
-        async function confirmDelete() {
-            const modal = document.getElementById('delete-confirmation-modal');
-            const entryId = modal.dataset.entryId;
-            if (entryId && currentUser) {
-                try {
-                    await deleteDoc(doc(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`, entryId));
-                } catch (error) {
-                    console.error("Erro ao excluir a entrada:", error);
-                } finally {
-                    modal.classList.add('hidden');
-                    delete modal.dataset.entryId; 
-                }
-            }
-        }
-
-        document.getElementById('confirm-delete-btn').addEventListener('click', confirmDelete);
-        document.getElementById('cancel-delete-btn').addEventListener('click', () => {
-            document.getElementById('delete-confirmation-modal').classList.add('hidden');
-        });
-
-
-        const pomodoroTimerEl = document.getElementById('pomodoro-timer');
-        const pomodoroStatusEl = document.getElementById('pomodoro-status');
-        const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-        let pomodoroInterval;
-        let pomodoroTime = 25 * 60;
-        let pomodoroRunning = false;
-        let pomodoroState = 'work';
-        let pomodoroCycles = 0;
-        const alarmSound = createAlarmSound();
-
-        function updatePomodoroUI() {
-            pomodoroTimerEl.textContent = formatTime(pomodoroTime).substring(3);
-            let cyclesHTML = '';
-            for(let i = 0; i < 4; i++) {
-                cyclesHTML += `<i class="fas fa-circle ${i < pomodoroCycles ? 'text-yellow-400' : 'text-gray-600'}"></i>`;
-            }
-            pomodoroCyclesEl.innerHTML = cyclesHTML;
-
-            if(pomodoroState === 'work') pomodoroStatusEl.textContent = `Ciclo ${pomodoroCycles + 1}: Hora de focar!`;
-            else if(pomodoroState === 'shortBreak') pomodoroStatusEl.textContent = 'Pausa curta. Respire fundo!';
-            else if(pomodoroState === 'longBreak') pomodoroStatusEl.textContent = 'Pausa longa. Descanse um pouco.';
-        }
-
-        function handlePomodoroFinish() {
-            clearInterval(pomodoroInterval);
-            pomodoroRunning = false;
-            alarmSound.play();
-            
-            if (pomodoroState === 'work') {
-                pomodoroCycles++;
-                if (pomodoroCycles % 4 === 0) {
-                    pomodoroState = 'longBreak';
-                    pomodoroTime = 15 * 60;
-                } else {
-                    pomodoroState = 'shortBreak';
-                    pomodoroTime = 5 * 60;
-                }
-            } else {
-                pomodoroState = 'work';
-                pomodoroTime = 25 * 60;
-                if(pomodoroCycles === 4) pomodoroCycles = 0;
-            }
-            new Notification(`Sessão finalizada!`, { body: `Hora de iniciar sua ${pomodoroState === 'work' ? 'sessão de foco' : 'pausa'}.`, icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
-            updatePomodoroUI();
-        }
-
-        document.getElementById('pomodoro-start').addEventListener('click', () => {
-            if (pomodoroRunning) return;
-            pomodoroRunning = true;
-            if(alarmSound.context.state === 'suspended') alarmSound.context.resume();
-            Notification.requestPermission();
-            pomodoroInterval = setInterval(() => {
-                pomodoroTime--;
-                updatePomodoroUI();
-                if (pomodoroTime < 0) {
-                   handlePomodoroFinish();
-                }
-            }, 1000);
-        });
-        document.getElementById('pomodoro-pause').addEventListener('click', () => { clearInterval(pomodoroInterval); pomodoroRunning = false; });
-        document.getElementById('pomodoro-reset').addEventListener('click', () => { 
-            clearInterval(pomodoroInterval); 
-            pomodoroRunning = false; 
-            pomodoroState = 'work';
-            pomodoroCycles = 0;
-            pomodoroTime = 25 * 60; 
-            updatePomodoroUI();
-        });
-        
-        function createAlarmSound() {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            function play() {
-                if (audioCtx.state === 'suspended') audioCtx.resume();
-                const oscillator = audioCtx.createOscillator();
-                const gainNode = audioCtx.createGain();
-                oscillator.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
-                oscillator.type = 'sine';
-                gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-                const notes = [660, 550, 660];
-                notes.forEach((freq, i) => {
-                    gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime + i * 0.2);
-                    oscillator.frequency.setValueAtTime(freq, audioCtx.currentTime + i * 0.2);
-                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime + i * 0.2 + 0.15);
-                });
-                oscillator.start(audioCtx.currentTime);
-                oscillator.stop(audioCtx.currentTime + notes.length * 0.2);
-            }
-            return { play, context: audioCtx };
-        }
-        updatePomodoroUI();
-
-        const tutorialSteps = [
-            { selector: '#task-creation-container', title: 'Passo 1: Crie sua Tarefa', text: 'Comece por aqui. Dê um nome para sua atividade, escolha uma categoria e clique em "Iniciar".' },
-            { selector: '#active-tasks-container', title: 'Passo 2: Controle suas Tarefas', text: 'Suas tarefas ativas aparecerão aqui. Use os botões de play/pause para controlar o tempo e o botão de finalizar para concluir.' },
-            { selector: '#pomodoro-container', title: 'Passo 3: Use o Pomodoro', text: 'Para um foco profundo, use a técnica Pomodoro. São 25 minutos de trabalho intenso seguidos por uma pausa.' },
-            { selector: '[data-view="my-performance-view"]', title: 'Passo 4: Analise seu Desempenho', text: 'Clique aqui para ver gráficos e relatórios sobre como está usando seu tempo.' },
-            { selector: '#open-chat-btn', title: 'Passo 5: Fale com o Yeti', text: 'Tem dúvidas? Clique no nosso assistente de IA. Ele pode dar dicas ou analisar seus dados para você.' }
-        ];
-        let currentStep = 0;
-
-        function showTutorialStep(stepIndex) {
-            const step = tutorialSteps[stepIndex];
-            const targetElement = document.querySelector(step.selector);
-            if (!targetElement) return;
-            const highlightBox = document.getElementById('tutorial-highlight-box');
-            const modalBox = document.getElementById('tutorial-modal-box');
-            const rect = targetElement.getBoundingClientRect();
-            highlightBox.style.width = `${rect.width + 10}px`;
-            highlightBox.style.height = `${rect.height + 10}px`;
-            highlightBox.style.top = `${rect.top - 5}px`;
-            highlightBox.style.left = `${rect.left - 5}px`;
-            document.getElementById('tutorial-title').textContent = step.title;
-            document.getElementById('tutorial-text').textContent = step.text;
-            document.getElementById('tutorial-step-counter').textContent = `${stepIndex + 1} / ${tutorialSteps.length}`;
-            const modalRect = modalBox.getBoundingClientRect();
-            let modalTop = rect.bottom + 15;
-            let modalLeft = rect.left;
-            if (modalTop + modalRect.height > window.innerHeight - 15) { modalTop = rect.top - modalRect.height - 15; }
-            if (modalLeft + modalRect.width > window.innerWidth - 15) { modalLeft = window.innerWidth - modalRect.width - 15; }
-            if (modalLeft < 15) { modalLeft = 15; }
-            if (modalTop < 15) { modalTop = 15; }
-            modalBox.style.top = `${modalTop}px`;
-            modalBox.style.left = `${modalLeft}px`;
-            document.getElementById('tutorial-prev').style.visibility = stepIndex === 0 ? 'hidden' : 'visible';
-            document.getElementById('tutorial-next').textContent = stepIndex === tutorialSteps.length - 1 ? 'Finalizar' : 'Próximo »';
-        }
-
-        function startTutorial() { document.getElementById('tutorial-container').classList.remove('hidden'); currentStep = 0; showTutorialStep(currentStep); }
-        function endTutorial() { document.getElementById('tutorial-container').classList.add('hidden'); }
-        document.getElementById('start-tutorial-btn').addEventListener('click', startTutorial);
-        document.getElementById('tutorial-close').addEventListener('click', endTutorial);
-        document.getElementById('tutorial-next').addEventListener('click', () => { currentStep < tutorialSteps.length - 1 ? showTutorialStep(++currentStep) : endTutorial(); });
-        document.getElementById('tutorial-prev').addEventListener('click', () => { if (currentStep > 0) showTutorialStep(--currentStep); });
-        
-        async function loadMyPerformanceDashboard(startDate = null, endDate = null) {
+        // =================================================================================
+        // 6. LÓGICA DOS DASHBOARDS E GRÁFICOS
+        // =================================================================================
+        async function loadMyPerformanceDashboard() {
             const container = document.getElementById('my-performance-view');
-            const dashboardContentId = 'my-performance-content';
-            let dashboardContent = document.getElementById(dashboardContentId);
+            container.innerHTML = `
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
+                    <button class="filter-btn bg-indigo-600" data-period="all">Tudo</button>
+                    <button class="filter-btn" data-period="today">Hoje</button>
+                    <button class="filter-btn" data-period="week">Esta Semana</button>
+                    <button class="filter-btn" data-period="month">Este Mês</button>
+                    <input type="text" id="my-date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
+                </div>
+                <div id="my-performance-content" class="relative min-h-[400px]"></div>`;
 
-            if (!dashboardContent) {
-                container.innerHTML = `
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center gap-4">
-                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
-                        <div><h2 class="text-lg font-bold">Análise de Performance</h2><p class="text-sm text-gray-300">"Medir o progresso é o primeiro passo para melhorá-lo."</p>
-                        <button id="open-dash-help" class="mt-2 text-sm text-indigo-400 hover:underline">Ver dicas do Yeti</button></div>
-                    </div>
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
-                        <button class="my-perf-filter-btn bg-indigo-600" data-period="all">Tudo</button>
-                        <button class="my-perf-filter-btn" data-period="today">Hoje</button>
-                        <button class="my-perf-filter-btn" data-period="week">Esta Semana</button>
-                        <button class="my-perf-filter-btn" data-period="month">Este Mês</button>
-                        <input type="text" id="my-perf-date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
-                    </div>
-                    <div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
-                dashboardContent = document.getElementById(dashboardContentId);
-                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
+            const contentContainer = document.getElementById('my-performance-content');
 
-                $('#my-perf-date-range-picker').daterangepicker({
-                    opens: 'left',
-                    locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
-                }, (start, end) => {
-                    container.querySelectorAll('.my-perf-filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                    loadMyPerformanceDashboard(start.toDate(), end.toDate());
-                });
+            const renderMyPerformanceData = async (startDate = null, endDate = null) => {
+                contentContainer.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
+                try {
+                    let q;
+                    if (startDate && endDate) {
+                         q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
+                    } else {
+                         q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
+                    }
+                    const querySnapshot = await getDocs(q);
+                    const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-                container.querySelectorAll('.my-perf-filter-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        container.querySelectorAll('.my-perf-filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                        e.target.classList.add('bg-indigo-600');
-                        $('#my-perf-date-range-picker').val('');
-                        const period = e.target.dataset.period;
-                        if(period === 'all') loadMyPerformanceDashboard(null, null);
-                        else if(period === 'today') loadMyPerformanceDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
-                        else if(period === 'week') loadMyPerformanceDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
-                        else if(period === 'month') loadMyPerformanceDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
-                    });
-                });
-                loadMyPerformanceDashboard(null, null);
-                return;
-            }
+                    const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
+                    const totalTasks = entries.length;
+                    const timeByCategory = entries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
+                    const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
+                    const chartLabels = filteredTimeByCategory.map(([key]) => key);
+                    const chartData = filteredTimeByCategory.map(([, value]) => value);
 
-            dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
-            if (!currentUser) { dashboardContent.innerHTML = ''; return; };
-
-            try {
-                const entriesCollection = collection(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`);
-                let q;
-                if(startDate && endDate){
-                    q = query(entriesCollection, where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
-                } else {
-                    q = query(entriesCollection, orderBy('endTime', 'desc'));
-                }
-                const querySnapshot = await getDocs(q);
-                const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-
-                const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
-                const totalTasks = entries.length;
-                const timeByCategory = entries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
-                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
-                
-                dashboardContent.innerHTML = `
-                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total Registrado</p></div>
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
-                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTasks > 0 ? totalTime / totalTasks : 0)}</p><p class="text-gray-400">Tempo Médio por Tarefa</p></div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
-                        <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
-                            <table class="w-full text-left text-sm">
-                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Pausas</th><th class="p-2">Data</th><th class="p-2">Ações</th></tr></thead>
-                                <tbody>${entries.map(e => `<tr class="border-b border-gray-700">
-                                        <td class="p-2">${e.name}<br><span class="tag-color ${getTagColor(e.tag)}">${e.tag}</span></td>
-                                        <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
-                                        <td class="p-2 text-center">${e.pauseCount}</td>
-                                        <td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleDateString()}</td>
-                                        <td class="p-2 text-center"><button class="delete-history-btn text-gray-400 hover:text-red-400" data-id="${e.id}"><i class="fas fa-trash"></i></button></td>
-                                    </tr>`).join('')}</tbody>
-                            </table>
+                    contentContainer.innerHTML = `
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total</p></div>
+                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Tarefas Concluídas</p></div>
+                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTasks > 0 ? totalTime / totalTasks : 0)}</p><p class="text-gray-400">Tempo Médio/Tarefa</p></div>
                         </div>
-                    </div>`;
-                new Chart(document.getElementById('my-perf-category-chart').getContext('2d'), { type: 'doughnut', data: { labels: filteredTimeByCategory.map(i=>i[0]), datasets: [{ data: filteredTimeByCategory.map(i=>i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
-            } catch (error) {
-                console.error("Erro ao carregar Meu Desempenho:", error);
-                dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar seus dados.</p>`;
-            }
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
+                            <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
+                                <table class="w-full text-left text-sm" id="my-history-table">
+                                    <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2 text-center"><i class="fas fa-cogs"></i></th></tr></thead>
+                                    <tbody>${entries.map(e => {
+                                        const tagColor = getTagColor(e.tag);
+                                        return `<tr class="border-b border-gray-700">
+                                            <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
+                                            <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
+                                            <td class="p-2 text-center"><button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${e.id}"><i class="fas fa-trash"></i></button></td>
+                                        </tr>`
+                                    }).join('')}</tbody>
+                                </table>
+                            </div>
+                        </div>`;
+                    
+                    new Chart(document.getElementById('my-perf-category-chart').getContext('2d'), { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
+                } catch (error) {
+                    console.error("Error loading My Performance Data:", error);
+                    contentContainer.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
+                }
+            };
+            
+            $('#my-date-range-picker').daterangepicker({ opens: 'left', locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"] } }, (start, end) => renderMyPerformanceData(start.toDate(), end.toDate()));
+
+            container.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                    e.target.classList.add('bg-indigo-600');
+                    const period = e.target.dataset.period;
+                    if(period === 'all') renderMyPerformanceData();
+                    else if(period === 'today') renderMyPerformanceData(moment().startOf('day').toDate(), moment().endOf('day').toDate());
+                    else if(period === 'week') renderMyPerformanceData(moment().startOf('week').toDate(), moment().endOf('week').toDate());
+                    else if(period === 'month') renderMyPerformanceData(moment().startOf('month').toDate(), moment().endOf('month').toDate());
+                });
+            });
+
+            renderMyPerformanceData(); // Carga inicial
         }
 
         async function loadTeamDashboard(startDate = null, endDate = null) {
             const container = document.getElementById('team-dashboard-view');
             const dashboardContentId = 'team-dashboard-content';
-            if (!document.getElementById(dashboardContentId)) {
+            let dashboardContent = document.getElementById(dashboardContentId);
+
+            if (!dashboardContent) {
                  container.innerHTML = `
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center justify-between gap-4">
-                        <div class="flex items-center gap-4"><img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20"><div><h2 class="text-lg font-bold">Análise da Equipe</h2><p class="text-sm text-gray-300">"Uma equipe sincronizada escala mais rápido."</p></div></div>
-                        <button id="open-dash-help-team" class="text-sm text-indigo-400 hover:underline flex-shrink-0">Ver dicas do Yeti</button>
-                    </div>
                     <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
-                        <button class="filter-btn bg-indigo-600" data-period="today">Hoje</button> <button class="filter-btn" data-period="week">Esta Semana</button> <button class="filter-btn" data-period="month">Este Mês</button>
+                        <button class="filter-btn bg-indigo-600" data-period="today">Hoje</button>
+                        <button class="filter-btn" data-period="week">Esta Semana</button>
+                        <button class="filter-btn" data-period="month">Este Mês</button>
                         <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
                     </div>
                     <div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
-                container.querySelector('#open-dash-help-team').addEventListener('click', openHelpModal);
-                $('#date-range-picker').daterangepicker({ opens: 'left', locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }}, (start, end) => loadTeamDashboard(start.toDate(), end.toDate()));
-                container.querySelectorAll('.filter-btn').forEach(btn => btn.addEventListener('click', (e) => {
-                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                    e.target.classList.add('bg-indigo-600');
-                    const period = e.target.dataset.period;
-                    if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
-                    else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
-                    else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
-                }));
-                loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
+                dashboardContent = document.getElementById(dashboardContentId);
+                
+                $('#date-range-picker').daterangepicker({
+                    opens: 'left',
+                    locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
+                }, function(start, end) {
+                    loadTeamDashboard(start.toDate(), end.toDate());
+                });
+                
+                container.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                        e.target.classList.add('bg-indigo-600');
+                        const period = e.target.dataset.period;
+                        if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
+                        else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
+                        else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
+                    });
+                });
             }
-            
-            const dashboardContent = document.getElementById(dashboardContentId);
-            dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
-            try {
-                const timeEntriesCollectionGroup = collectionGroup(db, 'time_entries');
-                let q = query(timeEntriesCollectionGroup, orderBy('endTime', 'desc'));
 
-                if (startDate && endDate) {
-                    q = query(timeEntriesCollectionGroup, 
-                        where('endTime', '>=', Timestamp.fromDate(startDate)), 
-                        where('endTime', '<=', Timestamp.fromDate(endDate)), 
-                        orderBy('endTime', 'desc')
-                    );
+            dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
+
+            try {
+                let timeEntriesQuery;
+                if(startDate && endDate){
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
+                } else {
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(300));
                 }
-                const snapshot = await getDocs(q);
+
+                const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => doc.data());
+
                 const totalTime = allEntries.reduce((sum, entry) => sum + entry.totalActiveTime, 0);
                 const timeByCategory = allEntries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
-                const timeByUser = allEntries.reduce((acc, curr) => { const name = curr.userName || curr.userEmail; acc[name] = (acc[name] || 0) + curr.totalActiveTime; return acc; }, {});
-                const topUsers = Object.entries(timeByUser).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
-                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, v]) => v > 0);
+                const timeByUser = allEntries.reduce((acc, curr) => { acc[curr.userEmail] = (acc[curr.userEmail] || 0) + curr.totalActiveTime; return acc; }, {});
+                
+                const topUsers = Object.entries(timeByUser).filter(([, value]) => value > 0).sort((a, b) => b[1] - a[1]).slice(0, 10);
+                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
+
                 dashboardContent.innerHTML = `
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                         <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total da Equipe</p></div>
@@ -981,73 +827,88 @@
                     </div>
                      <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Log de Atividades Recentes</h3>
                          <table class="w-full text-left text-sm">
-                            <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Colaborador</th><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2">Data</th></tr></thead>
-                            <tbody>${allEntries.slice(0, 50).map(e => `
-                                <tr class="border-b border-gray-700">
-                                    <td class="p-2">${e.userName || e.userEmail}</td>
-                                    <td class="p-2">${e.name}<br><span class="tag-color ${getTagColor(e.tag)}">${e.tag}</span></td>
-                                    <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
-                                    <td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleString()}</td>
-                                </tr>`).join('')}</tbody>
+                            <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Colaborador</th><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Data</th></tr></thead>
+                            <tbody>${allEntries.slice(0, 50).map(e => {
+                                const tagColor = getTagColor(e.tag);
+                                return `<tr class="border-b border-gray-700"><td class="p-2">${e.userEmail}</td><td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td><td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td><td class="p-2 text-center">${e.pauseCount}</td><td class="p-2">${new Date(e.endTime.seconds * 1000).toLocaleString()}</td></tr>`
+                            }).join('')}</tbody>
                         </table>
                      </div>`;
+                
                 new Chart(document.getElementById('team-category-chart').getContext('2d'), { type: 'bar', data: { labels: filteredTimeByCategory.map(i => i[0]), datasets: [{ label: 'Tempo', data: filteredTimeByCategory.map(i => i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
                 new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
             } catch (error) {
-                console.error("Erro ao carregar Dashboard da Equipe:", error);
+                console.error("Error loading Team Dashboard:", error);
                 dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
-                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link no console de erros.");
+                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
             }
         }
 
+        async function deleteHistoryEntry(entryId) {
+             if (!currentUser || !entryId) {
+                throw new Error("Utilizador não autenticado ou ID da entrada inválido.");
+            }
+            await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId));
+        }
+
+        // =================================================================================
+        // 7. LÓGICA DO PERFIL, POMODORO E MODAIS
+        // =================================================================================
         const profileModal = document.getElementById('profile-modal');
+        const changePasswordForm = document.getElementById('change-password-form');
+        
         document.getElementById('profile-button').addEventListener('click', () => { profileModal.classList.remove('hidden'); loadProfileDashboard(); });
         document.getElementById('close-profile-modal').addEventListener('click', () => profileModal.classList.add('hidden'));
 
-        async function loadUserProfile() {
-            if(!currentUser) return;
-            const userDocRef = doc(db, `artifacts/${appId}/users`, currentUser.uid);
-            const docSnap = await getDoc(userDocRef);
-            if (docSnap.exists()) {
-                currentUserProfile = docSnap.data();
-                const firstName = getFirstName(currentUserProfile);
-                document.getElementById('user-display-name').textContent = firstName;
-                document.getElementById('profile-modal-name').textContent = currentUserProfile.displayName || currentUser.email;
-                document.getElementById('profile-email').textContent = currentUser.email;
-                if (currentUserProfile.profilePicUrl) {
-                    document.getElementById('profile-pic-header').src = currentUserProfile.profilePicUrl;
-                    document.getElementById('profile-pic-modal').src = currentUserProfile.profilePicUrl;
-                } else {
-                    const placeholder = "https://placehold.co/128x128/4b5563/FFFFFF?text=" + (firstName ? firstName.charAt(0).toUpperCase() : 'P');
-                    document.getElementById('profile-pic-header').src = placeholder;
-                    document.getElementById('profile-pic-modal').src = placeholder;
-                }
-            } else {
-                console.log("Documento de perfil não encontrado!");
-            }
-        }
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            const passwordChangeFeedback = document.getElementById('password-change-feedback');
+            passwordChangeFeedback.textContent = '';
+            passwordChangeFeedback.classList.remove('text-green-400', 'text-red-400');
 
-        document.getElementById('profile-pic-upload').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file || !currentUser) return;
-            const storageRef = ref(storage, `profile_pics/${currentUser.uid}`);
+            if (newPassword !== confirmPassword) {
+                passwordChangeFeedback.textContent = 'As senhas não coincidem.';
+                passwordChangeFeedback.classList.add('text-red-400');
+                return;
+            }
+            if (newPassword.length < 6) {
+                passwordChangeFeedback.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+                passwordChangeFeedback.classList.add('text-red-400');
+                return;
+            }
+
             try {
-                await uploadBytes(storageRef, file);
-                const downloadURL = await getDownloadURL(storageRef);
-                await updateDoc(doc(db, `artifacts/${appId}/users`, currentUser.uid), { profilePicUrl: downloadURL });
-                document.getElementById('profile-pic-header').src = downloadURL;
-                document.getElementById('profile-pic-modal').src = downloadURL;
+                await updatePassword(currentUser, newPassword);
+                passwordChangeFeedback.textContent = 'Senha alterada com sucesso!';
+                passwordChangeFeedback.classList.add('text-green-400');
+                changePasswordForm.reset();
             } catch (error) {
-                console.error("Erro no upload da foto:", error);
+                console.error("Error updating password:", error);
+                passwordChangeFeedback.textContent = 'Erro ao alterar a senha. Faça logout e login novamente.';
+                passwordChangeFeedback.classList.add('text-red-400');
+            } finally {
+                setTimeout(() => { passwordChangeFeedback.textContent = ''; }, 4000);
             }
         });
+
+        async function loadUserProfile() {
+            if(!currentUser) return;
+            const profileRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/profile/settings`);
+            const docSnap = await getDoc(profileRef);
+            if (!docSnap.exists()) {
+                await setDoc(profileRef, { email: currentUser.email });
+            }
+            document.getElementById('profile-email').textContent = currentUser.email;
+        }
         
         async function loadProfileDashboard() {
             const container = document.getElementById('profile-dashboard-container');
             container.innerHTML = `<div class="absolute inset-0 flex items-center justify-center bg-gray-800 rounded-lg"><i class="fas fa-spinner fa-spin text-3xl text-indigo-400"></i></div>`;
             try {
                 const sevenDaysAgo = Timestamp.fromDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000));
-                const q = query(collection(db, `artifacts/${appId}/users/${currentUser.uid}/time_entries`), where('endTime', '>=', sevenDaysAgo));
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), where('endTime', '>=', sevenDaysAgo));
                 const snapshot = await getDocs(q);
                 const entries = snapshot.docs.map(doc => doc.data());
 
@@ -1057,55 +918,477 @@
                 container.innerHTML = `<p class="text-center text-3xl font-bold text-indigo-400 mb-4">${formatTime(totalTime)}</p><div class="h-64"><canvas id="profile-category-chart"></canvas></div>`;
                 new Chart(document.getElementById('profile-category-chart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(timeByCategory), datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
             } catch(error) {
-                container.innerHTML = `<div class="text-red-400 p-4">Ocorreu um erro ao carregar seu desempenho.</div>`;
+                console.error("Erro ao carregar o dashboard do perfil:", error);
+                container.innerHTML = `<div class="text-red-400 p-4">Ocorreu um erro ao carregar o seu desempenho.</div>`;
             }
         }
-        
-        const helpModal = document.getElementById('help-modal');
-        document.getElementById('open-timer-help').addEventListener('click', openHelpModal);
-        document.getElementById('close-help-modal').addEventListener('click', () => helpModal.classList.add('hidden'));
-        function openHelpModal() {
-            const currentView = document.querySelector('.nav-button.bg-indigo-600').dataset.view;
-            const contentEl = document.getElementById('help-modal-content');
-            if (currentView === 'timer-view') {
-                contentEl.innerHTML = `
-                    <div class="flex items-center gap-4 mb-6"><img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full"><h2 class="text-2xl font-bold text-white">Maximizando o Foco 💡</h2></div>
-                    <div class="space-y-4">
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Domine o Pomodoro</h3><p>Use os ciclos de 25 minutos para manter a concentração máxima. Isso treina seu cérebro para focar.</p></div>
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Limite suas Tarefas Ativas</h3><p>Limitar as tarefas ativas a 3 força a priorização. Conclua o que começou antes de abrir novos loops.</p></div>
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Converse com o Yeti</h3><p>Pergunte ao nosso assistente sobre seus padrões de trabalho. "Onde gastei mais tempo hoje?" pode revelar insights.</p></div>
-                    </div>`;
-            } else {
-                 contentEl.innerHTML = `
-                    <div class="flex items-center gap-4 mb-6"><img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full"><h2 class="text-2xl font-bold text-white">Entendendo Seus Dados 📊</h2></div>
-                    <div class="space-y-4">
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Tempo Total e Esforço</h3><p>Este é o seu indicador de esforço bruto. Aumentá-lo consistentemente, com qualidade, é o objetivo.</p></div>
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Tempo por Categoria</h3><p>Revela para onde sua energia está fluindo. Se o tempo em 'Reuniões' é maior que em 'Desenvolvimento', reavalie.</p></div>
-                        <div class="bg-gray-700 p-4 rounded-lg"><h3 class="font-bold text-lg">Top Colaboradores</h3><p>Na visão de equipe, este gráfico não é sobre competição, mas sobre reconhecer o esforço e identificar mentores.</p></div>
-                    </div>`;
-            }
-            helpModal.classList.remove('hidden');
-        }
-        
-        const chatModal = document.getElementById('chat-modal');
-        const chatMessages = document.getElementById('chat-messages');
-        const openChatBtn = document.getElementById('open-chat-btn');
-        document.getElementById('close-chat-btn').addEventListener('click', () => chatModal.classList.add('hidden'));
-        document.getElementById('chat-form').addEventListener('submit', (e) => { e.preventDefault(); const msg = document.getElementById('chat-input').value; if(msg) { addUserMessage(msg); processChatMessage(msg); } document.getElementById('chat-input').value = ''; });
-        function addUserMessage(message) { chatMessages.innerHTML += `<div class="flex justify-end"><div class="chat-bubble bg-indigo-600 text-white p-3 rounded-lg">${message}</div></div>`; chatMessages.scrollTop = chatMessages.scrollHeight; }
-        function addBotMessage(message) { chatMessages.innerHTML += `<div class="flex items-end gap-2"><img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-8 h-8 rounded-full"><div class="chat-bubble bg-gray-700 p-3 rounded-lg">${message}</div></div>`; chatMessages.scrollTop = chatMessages.scrollHeight; }
-        async function processChatMessage(message) { /* Lógica Gemini API */ }
 
-        let isDragging = false, hasDragged = false, offsetX = 0, offsetY = 0;
-        function onDragStart(e) { isDragging = true; hasDragged = false; const cX = e.touches ? e.touches[0].clientX : e.clientX; const cY = e.touches ? e.touches[0].clientY : e.clientY; const btnRect = openChatBtn.getBoundingClientRect(); offsetX = cX - btnRect.left; offsetY = cY - btnRect.top; openChatBtn.style.right = 'auto'; openChatBtn.style.bottom = 'auto'; openChatBtn.style.left = `${btnRect.left}px`; openChatBtn.style.top = `${btnRect.top}px`; document.addEventListener('mousemove', onDragMove); document.addEventListener('touchmove', onDragMove, { passive: false }); document.addEventListener('mouseup', onDragEnd); document.addEventListener('touchend', onDragEnd); }
-        function onDragMove(e) { if (!isDragging) return; e.preventDefault(); const cX = e.touches ? e.touches[0].clientX : e.clientX; const cY = e.touches ? e.touches[0].clientY : e.clientY; if (!hasDragged && (Math.abs(cX - (offsetX + parseFloat(openChatBtn.style.left))) > 5 || Math.abs(cY - (offsetY + parseFloat(openChatBtn.style.top))) > 5)) { hasDragged = true; } let nL = cX - offsetX, nT = cY - offsetY; const btnRect = openChatBtn.getBoundingClientRect(); if (nL < 0) nL = 0; if (nT < 0) nT = 0; if (nL + btnRect.width > window.innerWidth) nL = window.innerWidth - btnRect.width; if (nT + btnRect.height > window.innerHeight) nT = window.innerHeight - btnRect.height; openChatBtn.style.left = `${nL}px`; openChatBtn.style.top = `${nT}px`; positionChatModal(); }
-        function onDragEnd() { isDragging = false; document.removeEventListener('mousemove', onDragMove); document.removeEventListener('touchmove', onDragMove); document.removeEventListener('mouseup', onDragEnd); document.removeEventListener('touchend', onDragEnd); }
-        function positionChatModal() { if (chatModal.classList.contains('hidden')) return; const btnRect = openChatBtn.getBoundingClientRect(); let mT = btnRect.top - chatModal.offsetHeight - 16; let mL = btnRect.left + (btnRect.width / 2) - (chatModal.offsetWidth / 2); if (mT < 10) mT = btnRect.bottom + 16; if (mL < 10) mL = 10; if (mL + chatModal.offsetWidth > window.innerWidth) mL = window.innerWidth - chatModal.offsetWidth - 10; chatModal.style.top = `${mT}px`; chatModal.style.left = `${mL}px`; chatModal.style.right = 'auto'; chatModal.style.bottom = 'auto'; }
-        openChatBtn.addEventListener('mousedown', onDragStart); openChatBtn.addEventListener('touchstart', onDragStart, { passive: false });
-        openChatBtn.addEventListener('click', (e) => { if (hasDragged) { e.preventDefault(); return; } chatModal.classList.toggle('hidden'); positionChatModal(); });
-        window.addEventListener('resize', () => { openChatBtn.style.left = ''; openChatBtn.style.top = ''; openChatBtn.style.right = '1.5rem'; openChatBtn.style.bottom = '1.5rem'; positionChatModal(); });
+        // Pomodoro Refatorado
+        const pomodoroTimerEl = document.getElementById('pomodoro-timer');
+        const pomodoroTitleEl = document.getElementById('pomodoro-title');
+        const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
+        const pomodoroStartPauseBtn = document.getElementById('pomodoro-start-pause');
+        const POMODORO_SESSIONS = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
+        let pomodoroInterval;
+        let pomodoroState = {};
+
+        function resetPomodoroState() {
+            pomodoroState = { cycle: 1, onBreak: false, time: POMODORO_SESSIONS.work, running: false, started: false };
+            savePomodoroState();
+            updatePomodoroUI();
+        }
+
+        function savePomodoroState() { if(currentUser) localStorage.setItem(`pomodoroState_${currentUser.uid}`, JSON.stringify(pomodoroState)); }
         
-        document.getElementById('logout-button').addEventListener('click', () => signOut(auth));
+        function loadPomodoroState() {
+            if(!currentUser) return;
+            const savedState = localStorage.getItem(`pomodoroState_${currentUser.uid}`);
+            pomodoroState = savedState ? JSON.parse(savedState) : {};
+            if (!pomodoroState.cycle) {
+                resetPomodoroState();
+            } else if (pomodoroState.running) {
+                const elapsed = Math.floor(Date.now() / 1000) - pomodoroState.timestamp;
+                pomodoroState.time -= elapsed;
+                startPomodoroTimer();
+            }
+            updatePomodoroUI();
+        }
+
+        function updatePomodoroUI() {
+            pomodoroTimerEl.textContent = formatTime(pomodoroState.time).substring(3);
+            pomodoroStartPauseBtn.innerHTML = `<i class="fas fa-${pomodoroState.running ? 'pause' : 'play'}"></i>`;
+            pomodoroStartPauseBtn.className = `w-12 h-12 rounded-full flex items-center justify-center text-white ${pomodoroState.running ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'}`;
+            
+            pomodoroTitleEl.textContent = `Ciclo ${pomodoroState.cycle}/4 - ${pomodoroState.onBreak ? 'Pausa' : 'Foco'}`;
+            pomodoroCyclesEl.innerHTML = '';
+            for (let i = 1; i <= 4; i++) {
+                const cycleDiv = document.createElement('div');
+                cycleDiv.className = `pomodoro-cycle ${i < pomodoroState.cycle ? 'bg-indigo-500' : (i === pomodoroState.cycle && !pomodoroState.onBreak ? 'bg-green-500 animate-pulse' : 'bg-gray-600')}`;
+                pomodoroCyclesEl.appendChild(cycleDiv);
+            }
+        }
+        
+        function startPomodoroTimer() {
+            if (pomodoroInterval) clearInterval(pomodoroInterval);
+            pomodoroState.running = true;
+            pomodoroState.started = true;
+            pomodoroState.timestamp = Math.floor(Date.now() / 1000);
+            savePomodoroState();
+            
+            pomodoroInterval = setInterval(() => {
+                pomodoroState.time--;
+                if (pomodoroState.time < 0) {
+                    clearInterval(pomodoroInterval);
+                    handlePomodoroTransition();
+                    return;
+                }
+                savePomodoroState();
+                updatePomodoroUI();
+            }, 1000);
+            updatePomodoroUI();
+        }
+
+        function pausePomodoroTimer() {
+            clearInterval(pomodoroInterval);
+            pomodoroState.running = false;
+            savePomodoroState();
+            updatePomodoroUI();
+        }
+
+        function handlePomodoroTransition() {
+            const previousState = pomodoroState.onBreak ? (pomodoroState.cycle >= 4 ? "Pausa longa" : "Pausa curta") : "Sessão de foco";
+            playAlarm();
+            Notification.requestPermission().then(perm => {
+                if (perm === 'granted') new Notification("Ciclo Pomodoro Completo!", { body: `${previousState} finalizada.`, icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
+            });
+            
+            if (!pomodoroState.onBreak) { // Foco para Pausa
+                pomodoroState.onBreak = true;
+                if (pomodoroState.cycle < 4) {
+                    pomodoroState.time = POMODORO_SESSIONS.shortBreak;
+                } else {
+                    pomodoroState.time = POMODORO_SESSIONS.longBreak;
+                }
+            } else { // Pausa para Foco
+                pomodoroState.onBreak = false;
+                pomodoroState.cycle++;
+                if (pomodoroState.cycle > 4) {
+                    resetPomodoroState();
+                    return;
+                }
+                pomodoroState.time = POMODORO_SESSIONS.work;
+            }
+            startPomodoroTimer();
+        }
+        
+        pomodoroStartPauseBtn.addEventListener('click', () => {
+            if (pomodoroState.running) pausePomodoroTimer();
+            else startPomodoroTimer();
+        });
+        
+        document.getElementById('pomodoro-reset').addEventListener('click', () => {
+            clearInterval(pomodoroInterval);
+            resetPomodoroState();
+        });
+        
+        function playAlarm() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioCtx.createOscillator();
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+                oscillator.connect(audioCtx.destination);
+                oscillator.start();
+                setTimeout(() => oscillator.stop(), 500);
+            } catch (e) { console.error("Falha ao tocar o alarme:", e); }
+        }
+
+        // =================================================================================
+        // 8. LÓGICA DO CHATBOT E TUTORIAL
+        // =================================================================================
+        const chatModal = document.getElementById('chat-modal');
+        const chatForm = document.getElementById('chat-form');
+        const chatMessages = document.getElementById('chat-messages');
+        document.getElementById('open-chat-menu-btn').addEventListener('click', () => chatModal.classList.toggle('hidden'));
+        document.getElementById('close-chat-btn').addEventListener('click', () => chatModal.classList.add('hidden'));
+
+        chatForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (message) {
+                addUserMessage(message);
+                processChatMessage(message);
+            }
+            input.value = '';
+        });
+
+        function addUserMessage(message) {
+            chatHistory.push({ role: "user", parts: [{ text: message }] });
+            const messageEl = document.createElement('div');
+            messageEl.className = 'flex justify-end';
+            messageEl.innerHTML = `<div class="chat-bubble bg-indigo-600 rounded-lg p-3 text-white">${message}</div>`;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        function addBotMessage(message, isTyping = true) {
+            const messageEl = document.createElement('div');
+            messageEl.className = 'flex justify-start bot-message';
+            const content = isTyping ? `<div class="typing-indicator"><span></span><span></span><span></span></div>` : message;
+            messageEl.innerHTML = `<div class="chat-bubble bg-gray-700 rounded-lg p-3">${content}</div>`;
+            chatMessages.appendChild(messageEl);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+            return messageEl;
+        }
+
+        async function callGemini(systemInstruction, history) {
+            const apiKey = ""; 
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+            const payload = {
+                contents: history,
+                systemInstruction: { parts: [{ text: systemInstruction }] }
+            };
+
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) {
+                    const errorBody = await response.json();
+                    console.error("API Error Response:", errorBody);
+                    throw new Error(`API request failed with status ${response.status}`);
+                }
+                const result = await response.json();
+                return result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar a sua resposta.";
+            } catch (error) {
+                console.error('Error calling Gemini API:', error);
+                return "Ocorreu um erro ao conectar com a IA. Por favor, tente novamente.";
+            }
+        }
+
+        async function processChatMessage(message) {
+             const submitButton = document.getElementById('chat-submit-btn');
+            submitButton.disabled = true;
+            const typingIndicator = addBotMessage('', true);
+
+            try {
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(20));
+                const querySnapshot = await getDocs(q);
+                const entries = querySnapshot.docs.map(doc => doc.data());
+                const taskSummary = entries.map(e => `- "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
+
+                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional. Use os dados das tarefas do usuário para dar respostas personalizadas. Se não souber a resposta, admita. Aqui está um resumo das últimas tarefas do usuário:\n${taskSummary || 'Nenhuma tarefa concluída ainda.'}`;
+                
+                const botResponse = await callGemini(systemPrompt, chatHistory);
+
+                typingIndicator.querySelector('.chat-bubble').innerHTML = botResponse.replace(/\n/g, '<br>');
+                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
+            } catch (error) {
+                typingIndicator.querySelector('.chat-bubble').textContent = "Erro ao processar a mensagem.";
+            } finally {
+                submitButton.disabled = false;
+            }
+        }
+        
+        const tutorialModal = document.getElementById('tutorial-modal');
+        const tutorialBox = document.getElementById('tutorial-box');
+        let currentTutorialStep = 0;
+
+        const tutorialSteps = [
+             { 
+                title: "Passo 1: Crie sua Tarefa", 
+                content: "Comece por aqui. Dê um nome para sua atividade, escolha uma categoria e clique em 'Iniciar'.", 
+                selector: '#task-creation-container',
+                position: 'bottom'
+            },
+            {
+                title: "Passo 2: Acompanhe as Tarefas",
+                content: "Sua nova tarefa aparecerá aqui. Use os botões de play/pause para controlar o cronômetro.",
+                selector: '#active-tasks-container',
+                position: 'bottom'
+            },
+            {
+                title: "Passo 3: Finalize e Edite",
+                content: "Quando terminar, finalize a tarefa. Ela irá para o histórico recente, onde você pode editar os detalhes se precisar.",
+                selector: '#recent-history-container',
+                position: 'top'
+            },
+            {
+                title: "Passo 4: Use o Pomodoro",
+                content: "Para manter o foco, use o timer Pomodoro. São 4 ciclos de trabalho com pausas. O sistema salva seu progresso e te notifica.",
+                selector: '#pomodoro-container',
+                position: 'left'
+            },
+            {
+                title: "Passo 5: Analise seu Desempenho",
+                content: "Clique aqui para ver gráficos e um histórico completo das suas atividades. Use os filtros para analisar períodos específicos.",
+                selector: 'button[data-view="my-performance-view"]',
+                position: 'bottom',
+                preAction: () => document.querySelector('button[data-view="timer-view"]').click()
+            },
+            {
+                title: "Passo 6: Fale com o Yeti",
+                content: "Tem dúvidas ou quer insights? Clique no Yeti para conversar com seu assistente com IA.",
+                selector: '#open-chat-menu-btn',
+                position: 'left',
+                preAction: () => document.querySelector('button[data-view="timer-view"]').click()
+
+            }
+        ];
+
+        function positionTutorialBox(element, position) {
+            const rect = element.getBoundingClientRect();
+            const box = document.getElementById('tutorial-box');
+            
+            box.style.position = 'absolute';
+            tutorialModal.classList.remove('items-center', 'justify-center');
+
+            switch(position) {
+                case 'bottom':
+                    box.style.top = `${window.scrollY + rect.bottom + 15}px`;
+                    box.style.left = `${window.scrollX + rect.left + rect.width / 2 - box.offsetWidth / 2}px`;
+                    break;
+                case 'top':
+                    box.style.top = `${window.scrollY + rect.top - box.offsetHeight - 15}px`;
+                    box.style.left = `${window.scrollX + rect.left + rect.width / 2 - box.offsetWidth / 2}px`;
+                    break;
+                case 'left':
+                    box.style.top = `${window.scrollY + rect.top + rect.height / 2 - box.offsetHeight / 2}px`;
+                    box.style.left = `${window.scrollX + rect.left - box.offsetWidth - 15}px`;
+                    break;
+                default: // center
+                    tutorialModal.classList.add('items-center', 'justify-center');
+                    box.style.position = 'relative';
+                    box.style.top = '';
+                    box.style.left = '';
+                    break;
+            }
+            const boxRect = box.getBoundingClientRect();
+            if (boxRect.right > window.innerWidth - 10) box.style.left = `${window.innerWidth - boxRect.width - 10}px`;
+            if (boxRect.left < 10) box.style.left = '10px';
+            if (boxRect.bottom > window.innerHeight - 10) box.style.top = `${window.innerHeight - boxRect.height - 10}px`;
+            if (boxRect.top < 10) box.style.top = '10px';
+        }
+
+        function renderTutorialStep() {
+            document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+            
+            const step = tutorialSteps[currentTutorialStep];
+            const element = document.querySelector(step.selector);
+
+            if (element) {
+                element.classList.add('tutorial-highlight');
+                positionTutorialBox(element, step.position);
+            }
+            
+            const isLastStep = currentTutorialStep === tutorialSteps.length - 1;
+            
+            tutorialBox.innerHTML = `
+                <button id="close-tutorial-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+                <div>
+                    <h3 class="font-bold text-lg mb-2">${step.title}</h3>
+                    <p class="text-sm text-gray-300">${step.content}</p>
+                </div>
+                ${isLastStep ? `
+                <div class="flex items-center mt-4">
+                    <input type="checkbox" id="dont-show-again" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
+                    <label for="dont-show-again" class="ml-2 text-sm text-gray-400">Não mostrar novamente</label>
+                </div>` : ''}
+                <div class="flex justify-between items-center mt-4">
+                    <span class="text-xs text-gray-400">${currentTutorialStep + 1}/${tutorialSteps.length}</span>
+                    <div>
+                        <button id="tutorial-prev" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition">Anterior</button>
+                        <button id="tutorial-next" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition">${isLastStep ? 'Concluir' : 'Próximo'}</button>
+                    </div>
+                </div>
+            `;
+
+            document.getElementById('close-tutorial-modal').addEventListener('click', closeTutorialModal);
+            document.getElementById('tutorial-next').addEventListener('click', handleTutorialNext);
+            document.getElementById('tutorial-prev').addEventListener('click', handleTutorialPrev);
+            document.getElementById('tutorial-prev').style.visibility = currentTutorialStep === 0 ? 'hidden' : 'visible';
+        }
+
+        function handleTutorialNext() {
+            if (currentTutorialStep < tutorialSteps.length - 1) {
+                currentTutorialStep++;
+                const nextStep = tutorialSteps[currentTutorialStep];
+                if (nextStep.preAction) {
+                   nextStep.preAction();
+                }
+                setTimeout(renderTutorialStep, 100);
+            } else {
+                closeTutorialModal();
+            }
+        }
+
+        function handleTutorialPrev() {
+            if (currentTutorialStep > 0) {
+                currentTutorialStep--;
+                 const prevStep = tutorialSteps[currentTutorialStep];
+                if (prevStep.preAction) {
+                   prevStep.preAction();
+                }
+                setTimeout(renderTutorialStep, 100);
+            }
+        }
+
+        function openTutorialModal() {
+            currentTutorialStep = 0;
+            if (tutorialSteps[0].preAction) tutorialSteps[0].preAction();
+            tutorialModal.classList.remove('hidden');
+            setTimeout(renderTutorialStep, 100);
+        }
+
+        function closeTutorialModal() {
+            if (document.getElementById('dont-show-again')?.checked) {
+                localStorage.setItem(`tutorial_shown_${currentUser.uid}`, 'true');
+            }
+            tutorialModal.classList.add('hidden');
+            document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
+        }
+
+        document.getElementById('tutorial-button').addEventListener('click', openTutorialModal);
+
+
+        // =================================================================================
+        // 9. LÓGICA DE EDIÇÃO DO HISTÓRICO
+        // =================================================================================
+        function parseTimeToSeconds(timeString) {
+             const parts = timeString.split(':').map(Number);
+            if (parts.length === 3 && parts.every(p => !isNaN(p) && p >= 0)) {
+                return parts[0] * 3600 + parts[1] * 60 + parts[2];
+            }
+            return null;
+        }
+
+        async function handleDeleteHistory(button) {
+            const entryId = button.dataset.id;
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            try {
+                await deleteHistoryEntry(entryId);
+            } catch (error) {
+                console.error("Falha ao excluir, revertendo o botão.", error);
+                setTimeout(() => {
+                    button.disabled = false;
+                    button.innerHTML = `<i class="fas fa-trash"></i>`;
+                }, 1000);
+            }
+        }
+
+        function handleEditHistory(button) {
+            const entryId = button.dataset.id;
+            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
+            const entryData = recentHistory.find(e => e.id === entryId);
+            if (!entryDiv || !entryData) return;
+
+            const tagOptionsHTML = TAG_OPTIONS.map(tag => `<option value="${tag.name}" ${tag.name === entryData.tag ? 'selected' : ''}>${tag.name}</option>`).join('');
+            
+            entryDiv.innerHTML = `
+                <div class="space-y-3">
+                    <input type="text" value="${entryData.name}" class="edit-name w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">
+                    <div class="grid grid-cols-2 gap-3">
+                        <select class="edit-tag w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">${tagOptionsHTML}</select>
+                        <input type="text" value="${formatTime(entryData.totalActiveTime)}" class="edit-time w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg" placeholder="HH:MM:SS">
+                    </div>
+                    <div class="flex justify-end gap-2 mt-2">
+                        <button class="cancel-edit-btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-lg" data-id="${entryId}">Cancelar</button>
+                        <button class="save-history-btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-lg" data-id="${entryId}">Salvar</button>
+                    </div>
+                    <p class="edit-error-message text-red-400 text-xs h-3"></p>
+                </div>
+            `;
+        }
+        
+        async function handleSaveHistory(button) {
+             const entryId = button.dataset.id;
+            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
+            const errorMessageEl = entryDiv.querySelector('.edit-error-message');
+            
+            const newName = entryDiv.querySelector('.edit-name').value.trim();
+            const newTag = entryDiv.querySelector('.edit-tag').value;
+            const newTimeStr = entryDiv.querySelector('.edit-time').value;
+            const newTimeInSeconds = parseTimeToSeconds(newTimeStr);
+
+            if (!newName) {
+                errorMessageEl.textContent = 'O nome da tarefa não pode estar vazio.';
+                return;
+            }
+            if (newTimeInSeconds === null) {
+                errorMessageEl.textContent = 'Formato de tempo inválido. Use HH:MM:SS.';
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+            
+            try {
+                const docRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId);
+                await updateDoc(docRef, {
+                    name: newName,
+                    tag: newTag,
+                    totalActiveTime: newTimeInSeconds
+                });
+            } catch (error) {
+                console.error("Erro ao salvar a tarefa:", error);
+                errorMessageEl.textContent = 'Erro ao salvar.';
+                button.disabled = false;
+                button.innerHTML = 'Salvar';
+            }
+        }
+
+        function handleCancelEditHistory(button) {
+            const entryId = button.dataset.id;
+            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
+            const entryData = recentHistory.find(e => e.id === entryId);
+            if (entryDiv && entryData) {
+                entryDiv.innerHTML = generateHistoryEntryHTML(entryData);
+            }
+        }
     </script>
 </body>
 </html>
