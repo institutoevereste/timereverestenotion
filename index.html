@@ -21,6 +21,16 @@
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
+        @keyframes pulse-border-yellow {
+            0% { border-color: #a16207; } /* yellow-700 */
+            50% { border-color: #facc15; } /* yellow-400 */
+            100% { border-color: #a16207; }
+        }
+        .task-paused-pulse {
+            animation: pulse-border-yellow 2.5s infinite;
+            border: 2px solid;
+        }
+
         .chat-bubble { max-width: 80%; }
         .tag-color { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
         #chat-modal { position: fixed; z-index: 100; right: 1.5rem; top: 5rem; }
@@ -185,6 +195,24 @@
         </main>
     </div>
 
+    <!-- Modal de Confirmação para Finalizar Tarefa -->
+    <div id="finish-task-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl p-6 relative fade-in text-center">
+            <h2 class="text-2xl font-bold mb-4">Finalizar Tarefa</h2>
+            <p class="text-gray-300 mb-2">Confirma os detalhes da sua tarefa?</p>
+            <div class="bg-gray-700 p-4 rounded-lg text-left space-y-2 mb-6">
+                <p><strong class="text-indigo-400">Tarefa:</strong> <span id="finish-modal-name"></span></p>
+                <p><strong class="text-indigo-400">Categoria:</strong> <span id="finish-modal-tag"></span></p>
+                <p><strong class="text-indigo-400">Tempo Final:</strong> <span id="finish-modal-time" class="font-mono"></span></p>
+            </div>
+            <div class="flex justify-center gap-4">
+                <button id="cancel-finish-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition">Cancelar</button>
+                <button id="confirm-finish-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition">Confirmar</button>
+            </div>
+        </div>
+    </div>
+
+
     <!-- Modal do Perfil -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
         <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
@@ -300,6 +328,7 @@
         let unsubscribeRecentHistory = null;
         let chatHistory = [];
         let currentUserName = '';
+        let taskToConfirmFinish = null;
         
         const TAG_OPTIONS = [
             { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Web Design', color: 'bg-green-200 text-green-800' }, { name: 'UX', color: 'bg-green-200 text-green-800' }, { name: 'UI', color: 'bg-green-200 text-green-800' }, { name: 'App', color: 'bg-green-200 text-green-800' }, { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' }, { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' }, { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' }, { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' }, { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' }, { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' }, { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' }, { name: 'Evento', color: 'bg-purple-200 text-purple-800' }, { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' }, { name: 'Portal', color: 'bg-pink-200 text-pink-800' }, { name: 'E-mail', color: 'bg-pink-200 text-pink-800' }, { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' }, { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' }, { name: 'Instagram', color: 'bg-pink-200 text-pink-800' }, { name: 'Youtube', color: 'bg-pink-200 text-pink-800' }, { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' }, { name: 'Flickr', color: 'bg-pink-200 text-pink-800' }, { name: 'Facebook', color: 'bg-pink-200 text-pink-800' }, { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' }, { name: 'Impressão', color: 'bg-pink-200 text-pink-800' }, { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' }, { name: 'Documento', color: 'bg-red-200 text-red-800' }, { name: 'Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'Agendamento', color: 'bg-red-200 text-red-800' }, { name: 'Reunião', color: 'bg-red-200 text-red-800' }, { name: 'Planejamento', color: 'bg-red-200 text-red-800' }, { name: 'Treinamento', color: 'bg-red-200 text-red-800' }, { name: 'Pesquisa', color: 'bg-red-200 text-red-800' }, { name: 'Notícia', color: 'bg-red-200 text-red-800' }, { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' }, { name: 'Apresentação', color: 'bg-red-200 text-red-800' }, { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' }, { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' }, { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' }, { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' }, { name: 'Social Media', color: 'bg-orange-200 text-orange-800' }, { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' }, { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' }, { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' }, { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' },
@@ -351,6 +380,20 @@
                     if (viewId === 'my-performance-view') loadMyPerformanceDashboard();
                     if (viewId === 'team-dashboard-view') loadTeamDashboard();
                 });
+            });
+
+            const finishTaskModal = document.getElementById('finish-task-modal');
+            document.getElementById('cancel-finish-btn').addEventListener('click', () => {
+                finishTaskModal.classList.add('hidden');
+                taskToConfirmFinish = null;
+            });
+
+            document.getElementById('confirm-finish-btn').addEventListener('click', async () => {
+                if (taskToConfirmFinish) {
+                    await executeFinishTask(taskToConfirmFinish.task, taskToConfirmFinish.finalActiveTime);
+                    finishTaskModal.classList.add('hidden');
+                    taskToConfirmFinish = null;
+                }
             });
             
             onAuthStateChanged(auth, (user) => {
@@ -490,6 +533,10 @@
         });
 
         function handleAuthError(error) {
+             if (error.code && error.code.includes('auth/requests-from-referer')) {
+                authError.textContent = 'Domínio de acesso bloqueado. Autorize este site no painel do Firebase.';
+                return;
+             }
              switch (error.code) {
                 case 'auth/invalid-email': authError.textContent = 'Formato de e-mail inválido.'; break;
                 case 'auth/user-not-found':
@@ -574,14 +621,24 @@
             let finalActiveTime = taskToFinish.totalActiveTime;
 
             if (taskToFinish.status === 'running') {
-                 finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
-            }
+                finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
+                taskToConfirmFinish = { task: taskToFinish, finalActiveTime: finalActiveTime };
 
+                document.getElementById('finish-modal-name').textContent = taskToFinish.name;
+                document.getElementById('finish-modal-tag').textContent = taskToFinish.tag;
+                document.getElementById('finish-modal-time').textContent = formatTime(finalActiveTime);
+                document.getElementById('finish-task-modal').classList.remove('hidden');
+            } else {
+                await executeFinishTask(taskToFinish, finalActiveTime);
+            }
+        }
+
+        async function executeFinishTask(taskToFinish, finalActiveTime) {
             const { id, ...taskData } = taskToFinish;
             const finishedTask = { 
                 ...taskData,
                 userEmail: currentUser.email, 
-                endTime: now,
+                endTime: Timestamp.now(),
                 totalActiveTime: finalActiveTime 
             };
             
@@ -597,21 +654,27 @@
             }
         }
 
+
         function renderActiveTasks(tasks) {
-            activeTasks = tasks;
             activeTasksContainer.innerHTML = tasks.length === 0 ? `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>` : '';
             
             tasks.forEach(task => {
                 const isRunning = task.status === 'running';
                 let displayTime = task.totalActiveTime;
-                if(isRunning && task.lastStartTime) displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
+                if(isRunning && task.lastStartTime) {
+                    displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
+                }
                 const tagColor = getTagColor(task.tag);
                 
                 const taskCard = document.createElement('div');
-                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'}`;
+                const cardStateClasses = isRunning 
+                    ? 'bg-green-800/50 border-2 border-green-500' 
+                    : 'bg-gray-800 task-paused-pulse';
+                
+                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${cardStateClasses}`;
                 taskCard.innerHTML = `
                     <div class="flex-grow text-center md:text-left">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 justify-center md:justify-start">
                              ${isRunning ? '<span class="text-xs font-bold uppercase bg-green-500 text-gray-900 px-2 py-1 rounded">ATIVA</span>' : ''}
                             <h3 class="font-bold text-lg">${task.name || 'Tarefa sem nome'}</h3>
                         </div>
@@ -928,12 +991,12 @@
         const pomodoroTitleEl = document.getElementById('pomodoro-title');
         const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
         const pomodoroStartPauseBtn = document.getElementById('pomodoro-start-pause');
-        const POMODORO_SESSIONS = { work: 25 * 60, shortBreak: 5 * 60, longBreak: 15 * 60 };
+        const POMODORO_DURATIONS = { focus: 25 * 60, break: 5 * 60 };
         let pomodoroInterval;
         let pomodoroState = {};
 
         function resetPomodoroState() {
-            pomodoroState = { cycle: 1, onBreak: false, time: POMODORO_SESSIONS.work, running: false, started: false };
+            pomodoroState = { cycle: 1, time: POMODORO_DURATIONS.focus, running: false, started: false };
             savePomodoroState();
             updatePomodoroUI();
         }
@@ -959,11 +1022,21 @@
             pomodoroStartPauseBtn.innerHTML = `<i class="fas fa-${pomodoroState.running ? 'pause' : 'play'}"></i>`;
             pomodoroStartPauseBtn.className = `w-12 h-12 rounded-full flex items-center justify-center text-white ${pomodoroState.running ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'}`;
             
-            pomodoroTitleEl.textContent = `Ciclo ${pomodoroState.cycle}/4 - ${pomodoroState.onBreak ? 'Pausa' : 'Foco'}`;
+            const isFocusCycle = pomodoroState.cycle % 2 !== 0;
+            const focusSessionNumber = Math.ceil(pomodoroState.cycle / 2);
+
+            pomodoroTitleEl.textContent = `Sessão ${focusSessionNumber}/2 - ${isFocusCycle ? 'Foco' : 'Pausa'}`;
             pomodoroCyclesEl.innerHTML = '';
             for (let i = 1; i <= 4; i++) {
                 const cycleDiv = document.createElement('div');
-                cycleDiv.className = `pomodoro-cycle ${i < pomodoroState.cycle ? 'bg-indigo-500' : (i === pomodoroState.cycle && !pomodoroState.onBreak ? 'bg-green-500 animate-pulse' : 'bg-gray-600')}`;
+                let cycleClass = 'bg-gray-600';
+                if (i < pomodoroState.cycle) {
+                    cycleClass = 'bg-indigo-500'; // Completed
+                } else if (i === pomodoroState.cycle) {
+                    // Active cycle: green for focus, yellow for break
+                    cycleClass = (i % 2 !== 0) ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse';
+                }
+                cycleDiv.className = `pomodoro-cycle ${cycleClass}`;
                 pomodoroCyclesEl.appendChild(cycleDiv);
             }
         }
@@ -996,28 +1069,24 @@
         }
 
         function handlePomodoroTransition() {
-            const previousState = pomodoroState.onBreak ? (pomodoroState.cycle >= 4 ? "Pausa longa" : "Pausa curta") : "Sessão de foco";
+            const wasFocusCycle = pomodoroState.cycle % 2 !== 0;
+            const message = wasFocusCycle ? "Sessão de foco finalizada. Hora da pausa!" : "Pausa finalizada. Vamos voltar ao foco!";
+            
             playAlarm();
             Notification.requestPermission().then(perm => {
-                if (perm === 'granted') new Notification("Ciclo Pomodoro Completo!", { body: `${previousState} finalizada.`, icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
+                if (perm === 'granted') new Notification("Ciclo Pomodoro Completo!", { body: message, icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
             });
-            
-            if (!pomodoroState.onBreak) { // Foco para Pausa
-                pomodoroState.onBreak = true;
-                if (pomodoroState.cycle < 4) {
-                    pomodoroState.time = POMODORO_SESSIONS.shortBreak;
-                } else {
-                    pomodoroState.time = POMODORO_SESSIONS.longBreak;
-                }
-            } else { // Pausa para Foco
-                pomodoroState.onBreak = false;
-                pomodoroState.cycle++;
-                if (pomodoroState.cycle > 4) {
-                    resetPomodoroState();
-                    return;
-                }
-                pomodoroState.time = POMODORO_SESSIONS.work;
+
+            pomodoroState.cycle++;
+
+            if (pomodoroState.cycle > 4) {
+                resetPomodoroState();
+                return; // Stop the timer loop
             }
+            
+            const isNowFocusCycle = pomodoroState.cycle % 2 !== 0;
+            pomodoroState.time = isNowFocusCycle ? POMODORO_DURATIONS.focus : POMODORO_DURATIONS.break;
+            
             startPomodoroTimer();
         }
         
@@ -1088,7 +1157,7 @@
             // 1. Visite https://aistudio.google.com/app/apikey para criar sua chave.
             // 2. Cole a chave entre as aspas da variável 'apiKey' abaixo.
             // 3. Lembre-se de restringir o uso da chave ao seu domínio do GitHub Pages para segurança.
-            const apiKey = ""; // DEIXE EM BRANCO "" para testar aqui. COLE SUA CHAVE AQUI para o site publicado.
+            const apiKey = "AIzaSyDX7Rsu_BaC2HQdRXDgNgdV8Tp_i78gTK8"; // DEIXE EM BRANCO "" para testar aqui. COLE SUA CHAVE AQUI para o site publicado.
             const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
             
             const payload = {
@@ -1238,11 +1307,6 @@
                     <h3 class="font-bold text-lg mb-2">${step.title}</h3>
                     <p class="text-sm text-gray-300">${step.content}</p>
                 </div>
-                ${isLastStep ? `
-                <div class="flex items-center mt-4">
-                    <input type="checkbox" id="dont-show-again" class="h-4 w-4 rounded bg-gray-700 border-gray-600 text-indigo-600 focus:ring-indigo-500">
-                    <label for="dont-show-again" class="ml-2 text-sm text-gray-400">Não mostrar novamente</label>
-                </div>` : ''}
                 <div class="flex justify-between items-center mt-4">
                     <span class="text-xs text-gray-400">${currentTutorialStep + 1}/${tutorialSteps.length}</span>
                     <div>
@@ -1290,9 +1354,7 @@
         }
 
         function closeTutorialModal() {
-            if (document.getElementById('dont-show-again')?.checked) {
-                localStorage.setItem(`tutorial_shown_${currentUser.uid}`, 'true');
-            }
+            localStorage.setItem(`tutorial_shown_${currentUser.uid}`, 'true');
             tutorialModal.classList.add('hidden');
             document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
         }
@@ -1398,4 +1460,5 @@
     </script>
 </body>
 </html>
+
 
