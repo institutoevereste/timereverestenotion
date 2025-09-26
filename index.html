@@ -21,19 +21,10 @@
         .fade-in { animation: fadeIn 0.5s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        @keyframes pulse-border-yellow {
-            0% { border-color: #a16207; } /* yellow-700 */
-            50% { border-color: #facc15; } /* yellow-400 */
-            100% { border-color: #a16207; }
-        }
-        .task-paused-pulse {
-            animation: pulse-border-yellow 2.5s infinite;
-            border: 2px solid;
-        }
-
         .chat-bubble { max-width: 80%; }
         .tag-color { padding: 2px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
-        #chat-modal { position: fixed; z-index: 100; right: 1.5rem; top: 5rem; }
+        #open-chat-btn { position: fixed; bottom: 1.5rem; right: 1.5rem; z-index: 100; touch-action: none; cursor: move; }
+        #chat-modal { position: fixed; z-index: 100; }
         
         /* Estilos para o Date Range Picker */
         .daterangepicker { background-color: #374151 !important; border-color: #4b5563 !important; }
@@ -42,38 +33,6 @@
         .daterangepicker .off, .daterangepicker .off.in-range, .daterangepicker .off.start-date, .daterangepicker .off.end-date { background-color: #1f2937 !important; color: #6b7280 !important; }
         .daterangepicker .drp-buttons .btn { background-color: #4f46e5 !important; border-color: #4f46e5 !important; color: white !important; }
         .daterangepicker .drp-buttons .btn-default { background-color: #4b5563 !important; border-color: #4b5563 !important; }
-        
-         .typing-indicator { display: flex; align-items: center; justify-content: center; }
-        .typing-indicator span { height: 8px; width: 8px; margin: 0 2px; background-color: #9ca3af; border-radius: 50%; display: inline-block; animation: bounce 1.4s infinite ease-in-out both; }
-        .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
-        .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
-        @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-        .pomodoro-cycle { width: 1.5rem; height: 1.5rem; border-radius: 50%; transition: background-color 0.3s ease; }
-
-        /* Estilos do Tutorial */
-        .tutorial-highlight {
-            position: relative;
-            z-index: 101; /* Acima do backdrop do modal (z-100) */
-            transition: all 0.3s ease-in-out;
-            border-radius: 8px;
-            background: inherit;
-        }
-        .tutorial-highlight::after {
-            content: '';
-            position: absolute;
-            inset: -8px;
-            border: 3px solid #6366f1;
-            border-radius: 16px;
-            animation: pulse-border 2s infinite;
-            pointer-events: none;
-            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
-        }
-
-        @keyframes pulse-border {
-            0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7); }
-            70% { box-shadow: 0 0 0 10px rgba(99, 102, 241, 0); }
-            100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
-        }
     </style>
 </head>
 
@@ -110,14 +69,8 @@
         <!-- Cabeçalho -->
         <header class="bg-gray-800/50 backdrop-blur-sm sticky top-0 z-20 flex items-center justify-between p-4 border-b border-gray-700">
             <h1 class="text-xl font-bold text-white">Timer <span class="text-indigo-400">Evereste</span></h1>
-            <div class="flex items-center space-x-2">
-                 <button id="tutorial-button" title="Tutorial" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
-                    <i class="fas fa-question-circle"></i>
-                </button>
-                 <button id="open-chat-menu-btn" title="Yeti Assistente" class="w-10 h-10 bg-gray-700 rounded-full hover:bg-gray-600 transition overflow-hidden p-1">
-                    <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti Assistente" class="w-full h-full object-cover rounded-full">
-                </button>
-                <button id="profile-button" title="Meu Perfil" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
+            <div class="flex items-center space-x-4">
+                <button id="profile-button" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-indigo-400 hover:bg-gray-600 transition">
                     <i class="fas fa-user"></i>
                 </button>
                  <button id="logout-button" title="Sair" class="w-10 h-10 bg-gray-700 rounded-full flex items-center justify-center text-red-400 hover:bg-gray-600 transition">
@@ -165,16 +118,26 @@
                             </div>
                         </div>
                     </div>
-                    <!-- Pomodoro -->
+                    <!-- Pomodoro e Ajuda -->
                     <div class="space-y-6">
-                        <div id="pomodoro-container" class="bg-gray-800 p-4 rounded-xl shadow-lg text-center">
-                            <h2 id="pomodoro-title" class="text-lg font-bold mb-2">Sessão Pomodoro</h2>
+                        <!-- Pomodoro -->
+                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg text-center">
+                            <h2 class="text-lg font-bold mb-3">Sessão Pomodoro</h2>
                             <p id="pomodoro-timer" class="text-5xl font-mono font-bold text-indigo-400">25:00</p>
-                            <div id="pomodoro-cycles" class="flex justify-center gap-2 my-3"></div>
                             <div class="flex justify-center gap-3 mt-4">
-                                <button id="pomodoro-start-pause" class="bg-green-600 hover:bg-green-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-play"></i></button>
+                                <button id="pomodoro-start" class="bg-green-600 hover:bg-green-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-play"></i></button>
+                                <button id="pomodoro-pause" class="bg-yellow-500 hover:bg-yellow-600 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-pause"></i></button>
                                 <button id="pomodoro-reset" class="bg-red-600 hover:bg-red-700 w-12 h-12 rounded-full flex items-center justify-center text-white"><i class="fas fa-undo"></i></button>
                             </div>
+                        </div>
+                        <!-- Central de Ajuda -->
+                        <div class="bg-gray-800 p-4 rounded-xl shadow-lg">
+                             <h2 class="text-lg font-bold mb-3">Central de Ajuda</h2>
+                             <div class="flex items-center gap-4">
+                                <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Timer" class="w-20 h-20">
+                                <p class="text-sm text-gray-300">"O tempo é o recurso mais valioso. Use-o com sabedoria para escalar as suas próprias montanhas."</p>
+                             </div>
+                             <button id="open-timer-help" class="mt-4 w-full bg-indigo-600/50 hover:bg-indigo-600 text-white font-semibold py-2 px-4 rounded-lg transition">Dicas de Foco</button>
                         </div>
                     </div>
                 </div>
@@ -193,25 +156,12 @@
             <!-- Vista Dashboard da Equipe -->
             <div id="team-dashboard-view" class="view-content fade-in hidden"></div>
         </main>
-    </div>
 
-    <!-- Modal de Confirmação para Finalizar Tarefa -->
-    <div id="finish-task-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
-        <div class="bg-gray-800 w-full max-w-md rounded-2xl shadow-2xl p-6 relative fade-in text-center">
-            <h2 class="text-2xl font-bold mb-4">Finalizar Tarefa</h2>
-            <p class="text-gray-300 mb-2">Confirma os detalhes da sua tarefa?</p>
-            <div class="bg-gray-700 p-4 rounded-lg text-left space-y-2 mb-6">
-                <p><strong class="text-indigo-400">Tarefa:</strong> <span id="finish-modal-name"></span></p>
-                <p><strong class="text-indigo-400">Categoria:</strong> <span id="finish-modal-tag"></span></p>
-                <p><strong class="text-indigo-400">Tempo Final:</strong> <span id="finish-modal-time" class="font-mono"></span></p>
-            </div>
-            <div class="flex justify-center gap-4">
-                <button id="cancel-finish-btn" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-6 rounded-lg transition">Cancelar</button>
-                <button id="confirm-finish-btn" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded-lg transition">Confirmar</button>
-            </div>
-        </div>
+        <!-- Botão Flutuante do Chatbot -->
+        <button id="open-chat-btn" class="bg-indigo-600 hover:bg-indigo-700 w-16 h-16 rounded-full shadow-lg flex items-center justify-center transition-transform transform hover:scale-110 overflow-hidden p-1">
+            <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Abrir Chat do Yeti" class="w-full h-full object-cover rounded-full">
+        </button>
     </div>
-
 
     <!-- Modal do Perfil -->
     <div id="profile-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
@@ -237,16 +187,16 @@
         </div>
     </div>
     
-    <!-- Modal do Tutorial -->
-    <div id="tutorial-modal" class="hidden fixed inset-0 bg-black bg-opacity-75 z-[100]">
-        <div id="tutorial-box" class="bg-gray-800 w-full max-w-xs rounded-2xl shadow-2xl p-5 absolute fade-in">
-            <!-- O conteúdo do tutorial será injetado aqui -->
+    <!-- Modal da Central de Ajuda -->
+    <div id="help-modal" class="hidden fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-50 p-4">
+        <div class="bg-gray-800 w-full max-w-2xl rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto fade-in">
+            <button id="close-help-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times fa-lg"></i></button>
+            <div id="help-modal-content"></div>
         </div>
     </div>
 
-
     <!-- Modal do Chatbot -->
-    <div id="chat-modal" class="hidden w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col fade-in">
+    <div id="chat-modal" class="hidden bottom-24 right-6 w-[350px] h-[500px] bg-gray-800 rounded-2xl shadow-2xl flex flex-col fade-in">
         <div class="flex items-center p-4 bg-gray-900 rounded-t-2xl">
             <img src="https://i.postimg.cc/yxnH5wnY/Gemini-Generated-Image-ech0slech0slech0.png" alt="Yeti" class="w-10 h-10 rounded-full mr-3">
             <div>
@@ -261,7 +211,7 @@
         <form id="chat-form" class="p-4 border-t border-gray-700">
             <div class="flex items-center bg-gray-700 rounded-lg">
                 <input type="text" id="chat-input" placeholder="Pergunte algo..." class="w-full bg-transparent px-4 py-2 focus:outline-none">
-                <button type="submit" id="chat-submit-btn" class="p-2 text-indigo-400 hover:text-indigo-300"><i class="fas fa-paper-plane"></i></button>
+                <button type="submit" class="p-2 text-indigo-400 hover:text-indigo-300"><i class="fas fa-paper-plane"></i></button>
             </div>
         </form>
     </div>
@@ -296,8 +246,7 @@
             deleteDoc,
             getDocs,
             Timestamp,
-            collectionGroup,
-            updateDoc
+            collectionGroup
         } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // =================================================================================
@@ -322,16 +271,60 @@
 
         let currentUser = null;
         let activeTasks = [];
-        let recentHistory = [];
         let timerIntervals = {};
         let unsubscribeActiveTasks = null;
         let unsubscribeRecentHistory = null;
         let chatHistory = [];
         let currentUserName = '';
-        let taskToConfirmFinish = null;
         
         const TAG_OPTIONS = [
-            { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' }, { name: 'Web Design', color: 'bg-green-200 text-green-800' }, { name: 'UX', color: 'bg-green-200 text-green-800' }, { name: 'UI', color: 'bg-green-200 text-green-800' }, { name: 'App', color: 'bg-green-200 text-green-800' }, { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' }, { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' }, { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' }, { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' }, { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' }, { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' }, { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' }, { name: 'Evento', color: 'bg-purple-200 text-purple-800' }, { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' }, { name: 'Portal', color: 'bg-pink-200 text-pink-800' }, { name: 'E-mail', color: 'bg-pink-200 text-pink-800' }, { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' }, { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' }, { name: 'Instagram', color: 'bg-pink-200 text-pink-800' }, { name: 'Youtube', color: 'bg-pink-200 text-pink-800' }, { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' }, { name: 'Flickr', color: 'bg-pink-200 text-pink-800' }, { name: 'Facebook', color: 'bg-pink-200 text-pink-800' }, { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' }, { name: 'Impressão', color: 'bg-pink-200 text-pink-800' }, { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' }, { name: 'Documento', color: 'bg-red-200 text-red-800' }, { name: 'Comunicação', color: 'bg-red-200 text-red-800' }, { name: 'Agendamento', color: 'bg-red-200 text-red-800' }, { name: 'Reunião', color: 'bg-red-200 text-red-800' }, { name: 'Planejamento', color: 'bg-red-200 text-red-800' }, { name: 'Treinamento', color: 'bg-red-200 text-red-800' }, { name: 'Pesquisa', color: 'bg-red-200 text-red-800' }, { name: 'Notícia', color: 'bg-red-200 text-red-800' }, { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' }, { name: 'Apresentação', color: 'bg-red-200 text-red-800' }, { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' }, { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' }, { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' }, { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' }, { name: 'Social Media', color: 'bg-orange-200 text-orange-800' }, { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' }, { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' }, { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' }, { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Gestão de Projetos', color: 'bg-yellow-200 text-yellow-800' },
+            { name: 'Análise de Dados', color: 'bg-yellow-200 text-yellow-800' },
+            { name: 'Web Design', color: 'bg-green-200 text-green-800' },
+            { name: 'UX', color: 'bg-green-200 text-green-800' },
+            { name: 'UI', color: 'bg-green-200 text-green-800' },
+            { name: 'App', color: 'bg-green-200 text-green-800' },
+            { name: 'Pré-Produção', color: 'bg-gray-300 text-gray-800' },
+            { name: 'Roteiro', color: 'bg-gray-300 text-gray-800' },
+            { name: 'Edição de Vídeos', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Edição de Fotos', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Audiovisual', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Captação Material', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Pós-Produção', color: 'bg-blue-200 text-blue-800' },
+            { name: 'Evento', color: 'bg-purple-200 text-purple-800' },
+            { name: 'Cerimonial', color: 'bg-purple-200 text-purple-800' },
+            { name: 'Portal', color: 'bg-pink-200 text-pink-800' },
+            { name: 'E-mail', color: 'bg-pink-200 text-pink-800' },
+            { name: 'WhatsApp', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Linkedin', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Instagram', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Youtube', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Tiktok', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Flickr', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Facebook', color: 'bg-pink-200 text-pink-800' },
+            { name: 'TV Evereste', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Impressão', color: 'bg-pink-200 text-pink-800' },
+            { name: 'Assessoria de Comunicação', color: 'bg-red-200 text-red-800' },
+            { name: 'HYPERDOC', color: 'bg-red-200 text-red-800' },
+            { name: 'Documento', color: 'bg-red-200 text-red-800' },
+            { name: 'Comunicação', color: 'bg-red-200 text-red-800' },
+            { name: 'Agendamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Reunião', color: 'bg-red-200 text-red-800' },
+            { name: 'Planejamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Treinamento', color: 'bg-red-200 text-red-800' },
+            { name: 'Pesquisa', color: 'bg-red-200 text-red-800' },
+            { name: 'Notícia', color: 'bg-red-200 text-red-800' },
+            { name: 'Atividade Externa', color: 'bg-red-200 text-red-800' },
+            { name: 'Apresentação', color: 'bg-red-200 text-red-800' },
+            { name: 'Design Gráfico', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Design de Produtos', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Design 3D', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Motion Design', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Social Media', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Copywriting', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Endomarketing', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Identidade Visual', color: 'bg-orange-200 text-orange-800' },
+            { name: 'Mídia Paga', color: 'bg-orange-200 text-orange-800' },
         ];
 
 
@@ -356,18 +349,33 @@
         document.addEventListener('DOMContentLoaded', () => {
             const appContainer = document.getElementById('app-container');
             const authContainer = document.getElementById('auth-container');
+            const profileModal = document.getElementById('profile-modal');
+            const chatModal = document.getElementById('chat-modal');
             
+            // Listener de eventos centralizado para conteúdo dinâmico
             appContainer.addEventListener('click', async (event) => {
-                const target = event.target;
-                const deleteButton = target.closest('.delete-history-btn');
-                const editButton = target.closest('.edit-history-btn');
-                const saveButton = target.closest('.save-history-btn');
-                const cancelButton = target.closest('.cancel-edit-btn');
-
-                if (deleteButton && !deleteButton.disabled) handleDeleteHistory(deleteButton);
-                else if (editButton) handleEditHistory(editButton);
-                else if (saveButton) handleSaveHistory(saveButton);
-                else if (cancelButton) handleCancelEditHistory(cancelButton);
+                // Botão de exclusão do histórico
+                const deleteButton = event.target.closest('.delete-history-btn');
+                if (deleteButton && !deleteButton.disabled) {
+                    const originalIcon = deleteButton.innerHTML;
+                    deleteButton.disabled = true;
+                    deleteButton.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
+                    const entryId = deleteButton.dataset.id;
+                    
+                    try {
+                        if (entryId) {
+                            await deleteHistoryEntry(entryId);
+                            // Sucesso! O onSnapshot irá atualizar a UI.
+                        }
+                    } catch (error) {
+                        console.error("Falha ao excluir, revertendo o botão.", error);
+                        // Se falhar, reverte o botão ao estado original após um segundo
+                        setTimeout(() => {
+                            deleteButton.disabled = false;
+                            deleteButton.innerHTML = originalIcon;
+                        }, 1000);
+                    }
+                }
             });
             
             document.querySelectorAll('.nav-button').forEach(button => {
@@ -381,57 +389,45 @@
                     if (viewId === 'team-dashboard-view') loadTeamDashboard();
                 });
             });
-
-            const finishTaskModal = document.getElementById('finish-task-modal');
-            document.getElementById('cancel-finish-btn').addEventListener('click', () => {
-                finishTaskModal.classList.add('hidden');
-                taskToConfirmFinish = null;
-            });
-
-            document.getElementById('confirm-finish-btn').addEventListener('click', async () => {
-                if (taskToConfirmFinish) {
-                    await executeFinishTask(taskToConfirmFinish.task, taskToConfirmFinish.finalActiveTime);
-                    finishTaskModal.classList.add('hidden');
-                    taskToConfirmFinish = null;
-                }
-            });
             
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
+
+                    // Extrai e armazena o primeiro nome do utilizador a partir do e-mail
                     if (user.email) {
                         const namePart = user.email.split('@')[0];
                         const firstName = namePart.split('.')[0].split('-')[0];
                         currentUserName = firstName.charAt(0).toUpperCase() + firstName.slice(1);
                     } else {
-                        currentUserName = 'Usuário';
+                        currentUserName = 'Usuário'; // Fallback
                     }
 
                     authContainer.classList.add('hidden');
                     appContainer.classList.remove('hidden');
                     loadUserProfile();
                     setupListeners();
-                    loadPomodoroState();
                     
-                    if (!localStorage.getItem(`tutorial_shown_${user.uid}`)) {
-                        openTutorialModal();
-                    }
-
+                    // Reinicia o histórico e envia a mensagem de boas-vindas personalizada
                     chatHistory = [];
-                    const welcomeMessage = `Olá, <b>${currentUserName}</b>! Eu sou o Yeti, seu assistente de produtividade. Como posso ajudar?`;
-                    addBotMessage(welcomeMessage, false);
-                    chatHistory.push({ role: "model", parts: [{ text: welcomeMessage }] });
+                    const chatMessages = document.getElementById('chat-messages');
+                    if (chatMessages) { // Garante que o elemento existe
+                        const welcomeMessage = `Olá, <b>${currentUserName}</b>! Eu sou o Yeti, seu assistente de produtividade com IA. Faça qualquer pergunta sobre suas tarefas ou sobre como usar o app.`;
+                        addBotMessage(welcomeMessage);
+                        chatHistory.push({ role: "model", parts: [{ text: welcomeMessage }] });
+                    }
 
                 } else {
                     currentUser = null;
-                    currentUserName = '';
+                    currentUserName = ''; // Limpa o nome no logout
                     authContainer.classList.remove('hidden');
                     appContainer.classList.add('hidden');
                     cleanupListeners();
                     clearUI();
-                    chatHistory = [];
+                    chatHistory = []; // Limpa o histórico no logout
                 }
             });
+
         });
 
 
@@ -440,17 +436,17 @@
             cleanupListeners();
             const activeTasksQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`));
             unsubscribeActiveTasks = onSnapshot(activeTasksQuery, (snapshot) => {
-                activeTasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const tasks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 Object.values(timerIntervals).forEach(clearInterval);
                 timerIntervals = {};
-                renderActiveTasks(activeTasks);
+                renderActiveTasks(tasks);
             });
             const recentHistoryQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(5));
             unsubscribeRecentHistory = onSnapshot(recentHistoryQuery, (snapshot) => {
-                 recentHistory = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                 renderRecentHistory(recentHistory);
+                 renderRecentHistory(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
             }, (error) => {
                 console.error("Falha ao carregar o histórico recente: ", error);
+                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Verifique a consola de erros.");
             });
         }
 
@@ -462,7 +458,8 @@
         }
         
         function clearUI() {
-            document.getElementById('active-tasks-container').innerHTML = '';
+            const activeTasksContainer = document.getElementById('active-tasks-container');
+            activeTasksContainer.innerHTML = '';
             document.getElementById('recent-history-container').innerHTML = `<p id="no-recent-history" class="text-gray-400">Ainda não há tarefas finalizadas.</p>`;
             document.getElementById('my-performance-view').innerHTML = '';
             document.getElementById('team-dashboard-view').innerHTML = '';
@@ -489,7 +486,6 @@
         const authError = document.getElementById('auth-error');
         const toggleAuthModeLink = document.getElementById('toggle-auth-mode');
         const authTitle = document.getElementById('auth-title');
-        let isLoginMode = true;
         const authPromptText = document.getElementById('auth-prompt-text');
         const authButton = document.getElementById('auth-button');
         const togglePassword = document.getElementById('toggle-password');
@@ -497,27 +493,44 @@
         togglePassword.addEventListener('click', () => {
             const passwordInput = document.getElementById('password');
             const icon = togglePassword.querySelector('i');
-            passwordInput.type = passwordInput.type === 'password' ? 'text' : 'password';
-            icon.classList.toggle('fa-eye');
-            icon.classList.toggle('fa-eye-slash');
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
         });
-        
+
+        let isLoginMode = true;
+
         toggleAuthModeLink.addEventListener('click', (e) => {
             e.preventDefault();
             isLoginMode = !isLoginMode;
             authError.textContent = '';
             authForm.reset();
-            authTitle.textContent = isLoginMode ? 'Bem-vindo de volta!' : 'Crie a sua conta';
-            authButton.textContent = isLoginMode ? 'Entrar' : 'Registrar';
-            authPromptText.textContent = isLoginMode ? 'Não tem uma conta?' : 'Já tem uma conta?';
-            toggleAuthModeLink.textContent = isLoginMode ? 'Registrar-se' : 'Entrar';
+
+            if (isLoginMode) {
+                authTitle.textContent = 'Bem-vindo de volta!';
+                authButton.textContent = 'Entrar';
+                authPromptText.textContent = 'Não tem uma conta?';
+                toggleAuthModeLink.textContent = 'Registrar-se';
+            } else {
+                authTitle.textContent = 'Crie a sua conta';
+                authButton.textContent = 'Registrar';
+                authPromptText.textContent = 'Já tem uma conta?';
+                toggleAuthModeLink.textContent = 'Entrar';
+            }
         });
-        
+
         authForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             authError.textContent = '';
+
             try {
                 if (isLoginMode) {
                     await signInWithEmailAndPassword(auth, email, password);
@@ -533,10 +546,6 @@
         });
 
         function handleAuthError(error) {
-             if (error.code && error.code.includes('auth/requests-from-referer')) {
-                authError.textContent = 'Domínio de acesso bloqueado. Autorize este site no painel do Firebase.';
-                return;
-             }
              switch (error.code) {
                 case 'auth/invalid-email': authError.textContent = 'Formato de e-mail inválido.'; break;
                 case 'auth/user-not-found':
@@ -560,7 +569,7 @@
         const activeTasksContainer = document.getElementById('active-tasks-container');
         
         newTaskForm.addEventListener('submit', async (e) => {
-             e.preventDefault();
+            e.preventDefault();
             if (activeTasks.length >= 3) {
                 taskLimitError.textContent = 'Pode ter no máximo 3 tarefas ativas.';
                 setTimeout(() => taskLimitError.textContent = '', 3000);
@@ -589,7 +598,7 @@
         }
 
         function pauseTimer(taskId) {
-             clearInterval(timerIntervals[taskId]);
+            clearInterval(timerIntervals[taskId]);
             delete timerIntervals[taskId];
         }
 
@@ -600,7 +609,7 @@
         }
         
         async function continueTask(taskToContinue) {
-             await Promise.all(activeTasks.map(task => {
+            await Promise.all(activeTasks.map(task => {
                 if (task.id !== taskToContinue.id && task.status === 'running') return pauseTask(task);
             }));
 
@@ -617,64 +626,49 @@
 
         async function finishTask(taskToFinish) {
             pauseTimer(taskToFinish.id);
-            const now = Timestamp.now();
             let finalActiveTime = taskToFinish.totalActiveTime;
-
             if (taskToFinish.status === 'running') {
-                finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
-                taskToConfirmFinish = { task: taskToFinish, finalActiveTime: finalActiveTime };
-
-                document.getElementById('finish-modal-name').textContent = taskToFinish.name;
-                document.getElementById('finish-modal-tag').textContent = taskToFinish.tag;
-                document.getElementById('finish-modal-time').textContent = formatTime(finalActiveTime);
-                document.getElementById('finish-task-modal').classList.remove('hidden');
-            } else {
-                await executeFinishTask(taskToFinish, finalActiveTime);
+                 const now = Timestamp.now();
+                 finalActiveTime += (now.seconds - taskToFinish.lastStartTime.seconds);
             }
-        }
 
-        async function executeFinishTask(taskToFinish, finalActiveTime) {
+            // Separa o ID do resto dos dados da tarefa para evitar duplicação
             const { id, ...taskData } = taskToFinish;
+
             const finishedTask = { 
                 ...taskData,
                 userEmail: currentUser.email, 
-                endTime: Timestamp.now(),
+                endTime: Timestamp.now(), 
                 totalActiveTime: finalActiveTime 
             };
             
+            // Limpa propriedades desnecessárias
             delete finishedTask.status;
             delete finishedTask.lastStartTime;
             delete finishedTask.lastPauseTime;
             
             try {
+                // Adiciona ao histórico e depois remove da lista de ativas
                 await addDoc(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), finishedTask);
                 await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`, id));
-            } catch(error) { 
-                console.error("Erro ao finalizar a tarefa: ", error); 
-            }
+            } catch(error) { console.error("Error finishing task: ", error); }
         }
-
-
+        
         function renderActiveTasks(tasks) {
+            activeTasks = tasks;
             activeTasksContainer.innerHTML = tasks.length === 0 ? `<p class="text-gray-400 text-center">Nenhuma tarefa ativa. Inicie uma acima!</p>` : '';
             
             tasks.forEach(task => {
                 const isRunning = task.status === 'running';
                 let displayTime = task.totalActiveTime;
-                if(isRunning && task.lastStartTime) {
-                    displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
-                }
+                if(isRunning && task.lastStartTime) displayTime += (Math.floor(Date.now() / 1000) - task.lastStartTime.seconds);
                 const tagColor = getTagColor(task.tag);
                 
                 const taskCard = document.createElement('div');
-                const cardStateClasses = isRunning 
-                    ? 'bg-green-800/50 border-2 border-green-500' 
-                    : 'bg-gray-800 task-paused-pulse';
-                
-                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${cardStateClasses}`;
+                taskCard.className = `p-4 rounded-xl shadow-lg flex flex-col md:flex-row items-center justify-between gap-4 transition-all duration-300 ${isRunning ? 'bg-green-800/50 border-2 border-green-500' : 'bg-gray-800'}`;
                 taskCard.innerHTML = `
                     <div class="flex-grow text-center md:text-left">
-                        <div class="flex items-center gap-3 justify-center md:justify-start">
+                        <div class="flex items-center gap-3">
                              ${isRunning ? '<span class="text-xs font-bold uppercase bg-green-500 text-gray-900 px-2 py-1 rounded">ATIVA</span>' : ''}
                             <h3 class="font-bold text-lg">${task.name || 'Tarefa sem nome'}</h3>
                         </div>
@@ -706,121 +700,117 @@
             const container = document.getElementById('recent-history-container');
             container.innerHTML = `<p id="no-recent-history" class="text-gray-400 ${entries.length > 0 ? 'hidden' : ''}">Ainda não há tarefas finalizadas.</p>`;
             entries.forEach(entry => {
+                const tagColor = getTagColor(entry.tag);
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'bg-gray-700 p-4 rounded-lg';
-                entryDiv.dataset.id = entry.id;
-                entryDiv.innerHTML = generateHistoryEntryHTML(entry);
+
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                const taskEndDate = new Date(entry.endTime.seconds * 1000);
+                const taskStartDate = new Date(entry.startTime.seconds * 1000);
+                const isDeletable = taskEndDate > sevenDaysAgo;
+                
+                entryDiv.innerHTML = `
+                     <div class="flex justify-between items-start w-full">
+                        <div>
+                            <p class="font-semibold text-base">${entry.name}</p>
+                            <p class="tag-color ${tagColor}">${entry.tag}</p>
+                        </div>
+                        <div class="text-right flex-shrink-0 ml-4">
+                            <p class="font-mono text-xl">${formatTime(entry.totalActiveTime)}</p>
+                            <p class="text-xs text-gray-400">Tempo Total</p>
+                        </div>
+                    </div>
+                    <div class="mt-3 pt-3 border-t border-gray-600/50 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 items-center">
+                        <div>
+                            <p class="font-bold">Início:</p>
+                            <p>${taskStartDate.toLocaleDateString()} ${taskStartDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Fim:</p>
+                            <p>${taskEndDate.toLocaleDateString()} ${taskEndDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+                        </div>
+                        <div>
+                            <p class="font-bold">Pausas:</p>
+                            <p>${entry.pauseCount}</p>
+                        </div>
+                        <div class="flex justify-end">
+                            ${isDeletable ? `<button class="delete-history-btn text-gray-500 hover:text-red-400 text-lg" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>`;
                 container.appendChild(entryDiv);
             });
-        }
-
-        function generateHistoryEntryHTML(entry) {
-            const tagColor = getTagColor(entry.tag);
-            const taskEndDate = new Date(entry.endTime.seconds * 1000);
-            const taskStartDate = new Date(entry.startTime.seconds * 1000);
-            return `
-                 <div class="flex justify-between items-start w-full">
-                    <div>
-                        <p class="font-semibold text-base">${entry.name}</p>
-                        <p class="tag-color ${tagColor}">${entry.tag}</p>
-                    </div>
-                    <div class="text-right flex-shrink-0 ml-4">
-                        <p class="font-mono text-xl">${formatTime(entry.totalActiveTime)}</p>
-                        <p class="text-xs text-gray-400">Tempo Total</p>
-                    </div>
-                </div>
-                <div class="mt-3 pt-3 border-t border-gray-600/50 text-xs text-gray-400 grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-2 items-center">
-                    <div><p class="font-bold">Início:</p><p>${taskStartDate.toLocaleDateString()} ${taskStartDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div>
-                    <div><p class="font-bold">Fim:</p><p>${taskEndDate.toLocaleDateString()} ${taskEndDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p></div>
-                    <div><p class="font-bold">Pausas:</p><p>${entry.pauseCount}</p></div>
-                    <div class="flex justify-end gap-2">
-                        <button class="edit-history-btn text-gray-500 hover:text-indigo-400 text-lg" data-id="${entry.id}" title="Editar"><i class="fas fa-edit"></i></button>
-                        <button class="delete-history-btn text-gray-500 hover:text-red-400 text-lg" data-id="${entry.id}" title="Excluir"><i class="fas fa-trash"></i></button>
-                    </div>
-                </div>`;
         }
         
         // =================================================================================
         // 6. LÓGICA DOS DASHBOARDS E GRÁFICOS
         // =================================================================================
+        let myPerfChart = null;
+        let teamCategoryChart = null;
+        let teamUserChart = null;
+        
         async function loadMyPerformanceDashboard() {
             const container = document.getElementById('my-performance-view');
-            container.innerHTML = `
-                <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
-                    <button class="filter-btn bg-indigo-600" data-period="all">Tudo</button>
-                    <button class="filter-btn" data-period="today">Hoje</button>
-                    <button class="filter-btn" data-period="week">Esta Semana</button>
-                    <button class="filter-btn" data-period="month">Este Mês</button>
-                    <input type="text" id="my-date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
-                </div>
-                <div id="my-performance-content" class="relative min-h-[400px]"></div>`;
+            container.innerHTML = `<div class="fixed inset-0 bg-gray-900 bg-opacity-75 flex items-center justify-center z-40"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
+            if (!currentUser) { container.innerHTML = ''; return; };
 
-            const contentContainer = document.getElementById('my-performance-content');
+            try {
+                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
+                const querySnapshot = await getDocs(q);
+                const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
 
-            const renderMyPerformanceData = async (startDate = null, endDate = null) => {
-                contentContainer.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
-                try {
-                    let q;
-                    if (startDate && endDate) {
-                         q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
-                    } else {
-                         q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'));
-                    }
-                    const querySnapshot = await getDocs(q);
-                    const entries = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
+                const totalTasks = entries.length;
+                const timeByCategory = entries.reduce((acc, curr) => {
+                    acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime;
+                    return acc;
+                }, {});
 
-                    const totalTime = entries.reduce((acc, curr) => acc + curr.totalActiveTime, 0);
-                    const totalTasks = entries.length;
-                    const timeByCategory = entries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
-                    const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
-                    const chartLabels = filteredTimeByCategory.map(([key]) => key);
-                    const chartData = filteredTimeByCategory.map(([, value]) => value);
+                const filteredTimeByCategory = Object.entries(timeByCategory).filter(([, value]) => value > 0);
+                const chartLabels = filteredTimeByCategory.map(([key]) => key);
+                const chartData = filteredTimeByCategory.map(([, value]) => value);
 
-                    contentContainer.innerHTML = `
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total</p></div>
-                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Tarefas Concluídas</p></div>
-                            <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTasks > 0 ? totalTime / totalTasks : 0)}</p><p class="text-gray-400">Tempo Médio/Tarefa</p></div>
+                container.innerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center gap-4">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
+                        <div><h2 class="text-lg font-bold">Análise de Performance</h2><p class="text-sm text-gray-300">"Medir o progresso é o primeiro passo para melhorá-lo. Seus dados são o mapa para o seu pico de produtividade."</p>
+                        <button id="open-dash-help" class="mt-2 text-sm text-indigo-400 hover:underline">Ver dicas do Yeti</button></div>
+                    </div>
+                     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTime)}</p><p class="text-gray-400">Tempo Total Registado</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${totalTasks}</p><p class="text-gray-400">Total de Tarefas</p></div>
+                        <div class="bg-gray-800 p-6 rounded-xl text-center"><p class="text-3xl font-bold text-indigo-400">${formatTime(totalTasks > 0 ? totalTime / totalTasks : 0)}</p><p class="text-gray-400">Tempo Médio por Tarefa</p></div>
+                    </div>
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
+                        <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
+                            <table class="w-full text-left text-sm">
+                                <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo Total</th><th class="p-2"><i class="fas fa-pause-circle"></i></th><th class="p-2">Início</th><th class="p-2">Fim</th></tr></thead>
+                                <tbody>${entries.map(e => {
+                                    const tagColor = getTagColor(e.tag);
+                                    const startDate = new Date(e.startTime.seconds * 1000);
+                                    const endDate = new Date(e.endTime.seconds * 1000);
+
+                                    return `<tr class="border-b border-gray-700">
+                                        <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
+                                        <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
+                                        <td class="p-2">${e.pauseCount}</td>
+                                        <td class="p-2">${startDate.toLocaleString([], {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
+                                        <td class="p-2">${endDate.toLocaleString([], {day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute:'2-digit'})}</td>
+                                    </tr>`
+                                }).join('')}</tbody>
+                            </table>
                         </div>
-                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            <div class="bg-gray-800 p-6 rounded-xl h-[400px]"><h3 class="font-bold mb-4">Meu Tempo por Categoria</h3><canvas id="my-perf-category-chart"></canvas></div>
-                            <div class="bg-gray-800 p-6 rounded-xl max-h-[400px] overflow-y-auto"><h3 class="font-bold mb-4">Histórico Completo</h3>
-                                <table class="w-full text-left text-sm" id="my-history-table">
-                                    <thead class="text-xs text-gray-400 uppercase bg-gray-700"><tr><th class="p-2">Tarefa</th><th class="p-2">Tempo</th><th class="p-2 text-center"><i class="fas fa-cogs"></i></th></tr></thead>
-                                    <tbody>${entries.map(e => {
-                                        const tagColor = getTagColor(e.tag);
-                                        return `<tr class="border-b border-gray-700">
-                                            <td class="p-2">${e.name}<br><span class="tag-color ${tagColor}">${e.tag}</span></td>
-                                            <td class="p-2 font-mono">${formatTime(e.totalActiveTime)}</td>
-                                            <td class="p-2 text-center"><button class="delete-history-btn text-gray-500 hover:text-red-400" data-id="${e.id}"><i class="fas fa-trash"></i></button></td>
-                                        </tr>`
-                                    }).join('')}</tbody>
-                                </table>
-                            </div>
-                        </div>`;
-                    
-                    new Chart(document.getElementById('my-perf-category-chart').getContext('2d'), { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
-                } catch (error) {
-                    console.error("Error loading My Performance Data:", error);
-                    contentContainer.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
-                }
-            };
-            
-            $('#my-date-range-picker').daterangepicker({ opens: 'left', locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"] } }, (start, end) => renderMyPerformanceData(start.toDate(), end.toDate()));
+                    </div>`;
+                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
 
-            container.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                    e.target.classList.add('bg-indigo-600');
-                    const period = e.target.dataset.period;
-                    if(period === 'all') renderMyPerformanceData();
-                    else if(period === 'today') renderMyPerformanceData(moment().startOf('day').toDate(), moment().endOf('day').toDate());
-                    else if(period === 'week') renderMyPerformanceData(moment().startOf('week').toDate(), moment().endOf('week').toDate());
-                    else if(period === 'month') renderMyPerformanceData(moment().startOf('month').toDate(), moment().endOf('month').toDate());
-                });
-            });
-
-            renderMyPerformanceData(); // Carga inicial
+                const ctx = document.getElementById('my-perf-category-chart').getContext('2d');
+                if (myPerfChart) myPerfChart.destroy();
+                myPerfChart = new Chart(ctx, { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
+            } catch (error) {
+                console.error("Error loading My Performance Dashboard:", error);
+                container.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
+            }
         }
 
         async function loadTeamDashboard(startDate = null, endDate = null) {
@@ -830,6 +820,16 @@
 
             if (!dashboardContent) {
                  container.innerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex items-center justify-between gap-4">
+                        <div class="flex items-center gap-4">
+                           <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" alt="Mascote Dash" class="w-20 h-20">
+                            <div>
+                                <h2 class="text-lg font-bold">Análise da Equipe</h2>
+                                <p class="text-sm text-gray-300">"Uma equipe sincronizada escala mais rápido."</p>
+                            </div>
+                        </div>
+                        <button id="open-dash-help" class="text-sm text-indigo-400 hover:underline flex-shrink-0">Ver dicas do Yeti</button>
+                    </div>
                     <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
                         <button class="filter-btn bg-indigo-600" data-period="today">Hoje</button>
                         <button class="filter-btn" data-period="week">Esta Semana</button>
@@ -838,7 +838,8 @@
                     </div>
                     <div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
                 dashboardContent = document.getElementById(dashboardContentId);
-                
+                container.querySelector('#open-dash-help').addEventListener('click', openHelpModal);
+                 // Inicializa o date picker
                 $('#date-range-picker').daterangepicker({
                     opens: 'left',
                     locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
@@ -908,7 +909,7 @@
         }
 
         async function deleteHistoryEntry(entryId) {
-             if (!currentUser || !entryId) {
+            if (!currentUser || !entryId) {
                 throw new Error("Utilizador não autenticado ou ID da entrada inválido.");
             }
             await deleteDoc(doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId));
@@ -919,6 +920,8 @@
         // =================================================================================
         const profileModal = document.getElementById('profile-modal');
         const changePasswordForm = document.getElementById('change-password-form');
+        const passwordChangeFeedback = document.getElementById('password-change-feedback');
+        let profileChart = null;
         
         document.getElementById('profile-button').addEventListener('click', () => { profileModal.classList.remove('hidden'); loadProfileDashboard(); });
         document.getElementById('close-profile-modal').addEventListener('click', () => profileModal.classList.add('hidden'));
@@ -927,7 +930,6 @@
             e.preventDefault();
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
-            const passwordChangeFeedback = document.getElementById('password-change-feedback');
             passwordChangeFeedback.textContent = '';
             passwordChangeFeedback.classList.remove('text-green-400', 'text-red-400');
 
@@ -936,8 +938,9 @@
                 passwordChangeFeedback.classList.add('text-red-400');
                 return;
             }
-            if (newPassword.length < 6) {
-                passwordChangeFeedback.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+
+            if (!currentUser) {
+                passwordChangeFeedback.textContent = 'Usuário não autenticado.';
                 passwordChangeFeedback.classList.add('text-red-400');
                 return;
             }
@@ -949,10 +952,16 @@
                 changePasswordForm.reset();
             } catch (error) {
                 console.error("Error updating password:", error);
-                passwordChangeFeedback.textContent = 'Erro ao alterar a senha. Faça logout e login novamente.';
+                if (error.code === 'auth/weak-password') {
+                    passwordChangeFeedback.textContent = 'A senha deve ter pelo menos 6 caracteres.';
+                } else {
+                    passwordChangeFeedback.textContent = 'Erro ao alterar a senha. Tente novamente.';
+                }
                 passwordChangeFeedback.classList.add('text-red-400');
             } finally {
-                setTimeout(() => { passwordChangeFeedback.textContent = ''; }, 4000);
+                setTimeout(() => {
+                    passwordChangeFeedback.textContent = '';
+                }, 4000);
             }
         });
 
@@ -986,139 +995,124 @@
             }
         }
 
-        // Pomodoro Refatorado
+        // Pomodoro
         const pomodoroTimerEl = document.getElementById('pomodoro-timer');
-        const pomodoroTitleEl = document.getElementById('pomodoro-title');
-        const pomodoroCyclesEl = document.getElementById('pomodoro-cycles');
-        const pomodoroStartPauseBtn = document.getElementById('pomodoro-start-pause');
-        const POMODORO_DURATIONS = { focus: 25 * 60, break: 5 * 60 };
         let pomodoroInterval;
-        let pomodoroState = {};
-
-        function resetPomodoroState() {
-            pomodoroState = { cycle: 1, time: POMODORO_DURATIONS.focus, running: false, started: false };
-            savePomodoroState();
-            updatePomodoroUI();
-        }
-
-        function savePomodoroState() { if(currentUser) localStorage.setItem(`pomodoroState_${currentUser.uid}`, JSON.stringify(pomodoroState)); }
+        let pomodoroTime = 25 * 60;
+        let pomodoroRunning = false;
         
-        function loadPomodoroState() {
-            if(!currentUser) return;
-            const savedState = localStorage.getItem(`pomodoroState_${currentUser.uid}`);
-            pomodoroState = savedState ? JSON.parse(savedState) : {};
-            if (!pomodoroState.cycle) {
-                resetPomodoroState();
-            } else if (pomodoroState.running) {
-                const elapsed = Math.floor(Date.now() / 1000) - pomodoroState.timestamp;
-                pomodoroState.time -= elapsed;
-                startPomodoroTimer();
-            }
-            updatePomodoroUI();
-        }
-
-        function updatePomodoroUI() {
-            pomodoroTimerEl.textContent = formatTime(pomodoroState.time).substring(3);
-            pomodoroStartPauseBtn.innerHTML = `<i class="fas fa-${pomodoroState.running ? 'pause' : 'play'}"></i>`;
-            pomodoroStartPauseBtn.className = `w-12 h-12 rounded-full flex items-center justify-center text-white ${pomodoroState.running ? 'bg-yellow-500 hover:bg-yellow-600' : 'bg-green-600 hover:bg-green-700'}`;
-            
-            const isFocusCycle = pomodoroState.cycle % 2 !== 0;
-            const focusSessionNumber = Math.ceil(pomodoroState.cycle / 2);
-
-            pomodoroTitleEl.textContent = `Sessão ${focusSessionNumber}/2 - ${isFocusCycle ? 'Foco' : 'Pausa'}`;
-            pomodoroCyclesEl.innerHTML = '';
-            for (let i = 1; i <= 4; i++) {
-                const cycleDiv = document.createElement('div');
-                let cycleClass = 'bg-gray-600';
-                if (i < pomodoroState.cycle) {
-                    cycleClass = 'bg-indigo-500'; // Completed
-                } else if (i === pomodoroState.cycle) {
-                    // Active cycle: green for focus, yellow for break
-                    cycleClass = (i % 2 !== 0) ? 'bg-green-500 animate-pulse' : 'bg-yellow-500 animate-pulse';
-                }
-                cycleDiv.className = `pomodoro-cycle ${cycleClass}`;
-                pomodoroCyclesEl.appendChild(cycleDiv);
-            }
-        }
-        
-        function startPomodoroTimer() {
-            if (pomodoroInterval) clearInterval(pomodoroInterval);
-            pomodoroState.running = true;
-            pomodoroState.started = true;
-            pomodoroState.timestamp = Math.floor(Date.now() / 1000);
-            savePomodoroState();
-            
+        document.getElementById('pomodoro-start').addEventListener('click', () => {
+            if (pomodoroRunning) return;
+            pomodoroRunning = true;
+            Notification.requestPermission();
             pomodoroInterval = setInterval(() => {
-                pomodoroState.time--;
-                if (pomodoroState.time < 0) {
+                pomodoroTime--;
+                pomodoroTimerEl.textContent = formatTime(pomodoroTime).substring(3);
+                if (pomodoroTime <= 0) {
                     clearInterval(pomodoroInterval);
-                    handlePomodoroTransition();
-                    return;
+                    pomodoroRunning = false;
+                    new Notification("Pomodoro Finalizado!", { body: "Bom trabalho! Hora de uma pausa.", icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
+                    playAlarm();
+                    pomodoroTime = 25 * 60;
                 }
-                savePomodoroState();
-                updatePomodoroUI();
             }, 1000);
-            updatePomodoroUI();
-        }
-
-        function pausePomodoroTimer() {
-            clearInterval(pomodoroInterval);
-            pomodoroState.running = false;
-            savePomodoroState();
-            updatePomodoroUI();
-        }
-
-        function handlePomodoroTransition() {
-            const wasFocusCycle = pomodoroState.cycle % 2 !== 0;
-            const message = wasFocusCycle ? "Sessão de foco finalizada. Hora da pausa!" : "Pausa finalizada. Vamos voltar ao foco!";
-            
-            playAlarm();
-            Notification.requestPermission().then(perm => {
-                if (perm === 'granted') new Notification("Ciclo Pomodoro Completo!", { body: message, icon: "https://i.postimg.cc/mDhmmMcn/Gemini-Generated-Image-qbpc7rqbpc7rqbpc-2.png" });
-            });
-
-            pomodoroState.cycle++;
-
-            if (pomodoroState.cycle > 4) {
-                resetPomodoroState();
-                return; // Stop the timer loop
-            }
-            
-            const isNowFocusCycle = pomodoroState.cycle % 2 !== 0;
-            pomodoroState.time = isNowFocusCycle ? POMODORO_DURATIONS.focus : POMODORO_DURATIONS.break;
-            
-            startPomodoroTimer();
-        }
-        
-        pomodoroStartPauseBtn.addEventListener('click', () => {
-            if (pomodoroState.running) pausePomodoroTimer();
-            else startPomodoroTimer();
         });
-        
-        document.getElementById('pomodoro-reset').addEventListener('click', () => {
-            clearInterval(pomodoroInterval);
-            resetPomodoroState();
-        });
+        document.getElementById('pomodoro-pause').addEventListener('click', () => { clearInterval(pomodoroInterval); pomodoroRunning = false; });
+        document.getElementById('pomodoro-reset').addEventListener('click', () => { clearInterval(pomodoroInterval); pomodoroRunning = false; pomodoroTime = 25 * 60; pomodoroTimerEl.textContent = "25:00"; });
         
         function playAlarm() {
-            try {
-                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-                const oscillator = audioCtx.createOscillator();
-                oscillator.type = 'sine';
-                oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
-                oscillator.connect(audioCtx.destination);
-                oscillator.start();
-                setTimeout(() => oscillator.stop(), 500);
-            } catch (e) { console.error("Falha ao tocar o alarme:", e); }
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioCtx.createOscillator();
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(440, audioCtx.currentTime);
+            oscillator.connect(audioCtx.destination);
+            oscillator.start();
+            setTimeout(() => oscillator.stop(), 500);
+        }
+
+        // Central de Ajuda
+        const helpModal = document.getElementById('help-modal');
+        document.getElementById('open-timer-help').addEventListener('click', openHelpModal);
+        document.getElementById('close-help-modal').addEventListener('click', () => helpModal.classList.add('hidden'));
+
+        function openHelpModal() {
+            const currentView = document.querySelector('.nav-button.bg-indigo-600').dataset.view;
+            const contentEl = document.getElementById('help-modal-content');
+            if (currentView === 'timer-view') {
+                contentEl.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full">
+                        <h2 class="text-2xl font-bold text-white">Maximizando o Foco 💡</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- Card Pomodoro -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-red-400 mt-1"><i class="fas fa-stopwatch"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Domine o Pomodoro</h3>
+                                <p class="text-gray-300 text-sm">Use os ciclos de 25 minutos para manter a concentração máxima. Ao final, faça uma pausa curta. Isso treina seu cérebro para focar intensamente por períodos definidos.</p>
+                            </div>
+                        </div>
+                        <!-- Card Tarefas -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-blue-400 mt-1"><i class="fas fa-tasks"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Limite suas Tarefas Ativas</h3>
+                                <p class="text-gray-300 text-sm">Limitar as tarefas ativas a 3 força a priorização. Conclua o que começou antes de abrir novos loops. Foco gera momentum e evita a sobrecarga mental.</p>
+                            </div>
+                        </div>
+                        <!-- Card Yeti -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-indigo-400 mt-1"><i class="fas fa-comment-dots"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Converse com o Yeti</h3>
+                                <p class="text-gray-300 text-sm">Pergunte ao nosso assistente sobre seus padrões de trabalho. "Onde gastei mais tempo hoje?" pode revelar insights para otimizar seu próximo dia.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            } else {
+                 contentEl.innerHTML = `
+                    <div class="flex items-center gap-4 mb-6">
+                        <img src="https://i.postimg.cc/nVP7BvRQ/Sem-T-tulo-1.jpg" class="w-24 h-24 rounded-full">
+                        <h2 class="text-2xl font-bold text-white">Entendendo Seus Dados 📊</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <!-- Card Tempo Total -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-green-400 mt-1"><i class="fas fa-chart-line"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Tempo Total e Esforço</h3>
+                                <p class="text-gray-300 text-sm">Este é o seu indicador de esforço bruto. É a base da sua produtividade. Aumentá-lo consistentemente, com qualidade, é o objetivo principal.</p>
+                            </div>
+                        </div>
+                        <!-- Card Categoria -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-purple-400 mt-1"><i class="fas fa-chart-pie"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Tempo por Categoria</h3>
+                                <p class="text-gray-300 text-sm">Revela para onde sua energia está a fluir. Se o tempo em 'Reuniões' é maior que em 'Desenvolvimento', pode ser um sinal para reavaliar sua agenda e prioridades.</p>
+                            </div>
+                        </div>
+                        <!-- Card Colaboradores -->
+                        <div class="bg-gray-700 p-4 rounded-lg flex items-start gap-4">
+                            <div class="text-2xl text-yellow-400 mt-1"><i class="fas fa-users"></i></div>
+                            <div>
+                                <h3 class="font-bold text-lg">Top Colaboradores</h3>
+                                <p class="text-gray-300 text-sm">Na visão de equipe, este gráfico não é sobre competição, mas sobre reconhecer o esforço e identificar quem pode ser um mentor em práticas de alta produtividade.</p>
+                            </div>
+                        </div>
+                    </div>`;
+            }
+            helpModal.classList.remove('hidden');
         }
 
         // =================================================================================
-        // 8. LÓGICA DO CHATBOT E TUTORIAL
+        // 8. LÓGICA DO CHATBOT
         // =================================================================================
         const chatModal = document.getElementById('chat-modal');
         const chatForm = document.getElementById('chat-form');
-        const chatMessages = document.getElementById('chat-messages');
-        document.getElementById('open-chat-menu-btn').addEventListener('click', () => chatModal.classList.toggle('hidden'));
+
+        document.getElementById('open-chat-btn').addEventListener('click', (e) => { /* ... */ });
         document.getElementById('close-chat-btn').addEventListener('click', () => chatModal.classList.add('hidden'));
 
         chatForm.addEventListener('submit', (e) => {
@@ -1132,333 +1126,31 @@
             input.value = '';
         });
 
-        function addUserMessage(message) {
-            chatHistory.push({ role: "user", parts: [{ text: message }] });
-            const messageEl = document.createElement('div');
-            messageEl.className = 'flex justify-end';
-            messageEl.innerHTML = `<div class="chat-bubble bg-indigo-600 rounded-lg p-3 text-white">${message}</div>`;
-            chatMessages.appendChild(messageEl);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-        }
-
-        function addBotMessage(message, isTyping = true) {
-            const messageEl = document.createElement('div');
-            messageEl.className = 'flex justify-start bot-message';
-            const content = isTyping ? `<div class="typing-indicator"><span></span><span></span><span></span></div>` : message;
-            messageEl.innerHTML = `<div class="chat-bubble bg-gray-700 rounded-lg p-3">${content}</div>`;
-            chatMessages.appendChild(messageEl);
-            chatMessages.scrollTop = chatMessages.scrollHeight;
-            return messageEl;
-        }
-
-        async function callGemini(systemInstruction, history) {
-            // IMPORTANTE: Para o chat funcionar no seu site publicado (como no GitHub Pages),
-            // você PRECISA criar sua própria chave de API no Google AI Studio e colá-la aqui.
-            // 1. Visite https://aistudio.google.com/app/apikey para criar sua chave.
-            // 2. Cole a chave entre as aspas da variável 'apiKey' abaixo.
-            // 3. Lembre-se de restringir o uso da chave ao seu domínio do GitHub Pages para segurança.
-            const apiKey = "AIzaSyDX7Rsu_BaC2HQdRXDgNgdV8Tp_i78gTK8"; // DEIXE EM BRANCO "" para testar aqui. COLE SUA CHAVE AQUI para o site publicado.
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-            
-            const payload = {
-                contents: history,
-                systemInstruction: { parts: [{ text: systemInstruction }] }
-            };
-
-            try {
-                const response = await fetch(url, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-                if (!response.ok) {
-                    const errorBody = await response.json();
-                    console.error("API Error Response:", errorBody);
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-                const result = await response.json();
-                return result.candidates?.[0]?.content?.parts?.[0]?.text || "Desculpe, não consegui processar a sua resposta.";
-            } catch (error) {
-                console.error('Error calling Gemini API:', error);
-                return "Ocorreu um erro ao conectar com a IA. Verifique se a chave de API está configurada corretamente para o site publicado.";
-            }
-        }
-
-        async function processChatMessage(message) {
-             const submitButton = document.getElementById('chat-submit-btn');
-            submitButton.disabled = true;
-            const typingIndicator = addBotMessage('', true);
-
-            try {
-                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(20));
-                const querySnapshot = await getDocs(q);
-                const entries = querySnapshot.docs.map(doc => doc.data());
-                const taskSummary = entries.map(e => `- "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
-
-                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional. Use os dados das tarefas do usuário para dar respostas personalizadas. Se não souber a resposta, admita. Aqui está um resumo das últimas tarefas do usuário:\n${taskSummary || 'Nenhuma tarefa concluída ainda.'}`;
-                
-                const botResponse = await callGemini(systemPrompt, chatHistory);
-
-                typingIndicator.querySelector('.chat-bubble').innerHTML = botResponse.replace(/\n/g, '<br>');
-                chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
-            } catch (error) {
-                typingIndicator.querySelector('.chat-bubble').textContent = "Erro ao processar a mensagem.";
-            } finally {
-                submitButton.disabled = false;
-            }
-        }
-        
-        const tutorialModal = document.getElementById('tutorial-modal');
-        const tutorialBox = document.getElementById('tutorial-box');
-        let currentTutorialStep = 0;
-
-        const tutorialSteps = [
-             { 
-                title: "Passo 1: Crie sua Tarefa", 
-                content: "Comece por aqui. Dê um nome para sua atividade, escolha uma categoria e clique em 'Iniciar'.", 
-                selector: '#task-creation-container',
-                position: 'bottom'
-            },
-            {
-                title: "Passo 2: Acompanhe as Tarefas",
-                content: "Sua nova tarefa aparecerá aqui. Use os botões de play/pause para controlar o cronômetro.",
-                selector: '#active-tasks-container',
-                position: 'bottom'
-            },
-            {
-                title: "Passo 3: Finalize e Edite",
-                content: "Quando terminar, finalize a tarefa. Ela irá para o histórico recente, onde você pode editar os detalhes se precisar.",
-                selector: '#recent-history-container',
-                position: 'top'
-            },
-            {
-                title: "Passo 4: Use o Pomodoro",
-                content: "Para manter o foco, use o timer Pomodoro. São 4 ciclos de trabalho com pausas. O sistema salva seu progresso e te notifica.",
-                selector: '#pomodoro-container',
-                position: 'left'
-            },
-            {
-                title: "Passo 5: Analise seu Desempenho",
-                content: "Clique aqui para ver gráficos e um histórico completo das suas atividades. Use os filtros para analisar períodos específicos.",
-                selector: 'button[data-view="my-performance-view"]',
-                position: 'bottom',
-                preAction: () => document.querySelector('button[data-view="timer-view"]').click()
-            },
-            {
-                title: "Passo 6: Fale com o Yeti",
-                content: "Tem dúvidas ou quer insights? Clique no Yeti para conversar com seu assistente com IA.",
-                selector: '#open-chat-menu-btn',
-                position: 'left',
-                preAction: () => document.querySelector('button[data-view="timer-view"]').click()
-
-            }
-        ];
-
-        function positionTutorialBox(element, position) {
-            const rect = element.getBoundingClientRect();
-            const box = document.getElementById('tutorial-box');
-            
-            box.style.position = 'absolute';
-            tutorialModal.classList.remove('items-center', 'justify-center');
-
-            switch(position) {
-                case 'bottom':
-                    box.style.top = `${window.scrollY + rect.bottom + 15}px`;
-                    box.style.left = `${window.scrollX + rect.left + rect.width / 2 - box.offsetWidth / 2}px`;
-                    break;
-                case 'top':
-                    box.style.top = `${window.scrollY + rect.top - box.offsetHeight - 15}px`;
-                    box.style.left = `${window.scrollX + rect.left + rect.width / 2 - box.offsetWidth / 2}px`;
-                    break;
-                case 'left':
-                    box.style.top = `${window.scrollY + rect.top + rect.height / 2 - box.offsetHeight / 2}px`;
-                    box.style.left = `${window.scrollX + rect.left - box.offsetWidth - 15}px`;
-                    break;
-                default: // center
-                    tutorialModal.classList.add('items-center', 'justify-center');
-                    box.style.position = 'relative';
-                    box.style.top = '';
-                    box.style.left = '';
-                    break;
-            }
-            const boxRect = box.getBoundingClientRect();
-            if (boxRect.right > window.innerWidth - 10) box.style.left = `${window.innerWidth - boxRect.width - 10}px`;
-            if (boxRect.left < 10) box.style.left = '10px';
-            if (boxRect.bottom > window.innerHeight - 10) box.style.top = `${window.innerHeight - boxRect.height - 10}px`;
-            if (boxRect.top < 10) box.style.top = '10px';
-        }
-
-        function renderTutorialStep() {
-            document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
-            
-            const step = tutorialSteps[currentTutorialStep];
-            const element = document.querySelector(step.selector);
-
-            if (element) {
-                element.classList.add('tutorial-highlight');
-                positionTutorialBox(element, step.position);
-            }
-            
-            const isLastStep = currentTutorialStep === tutorialSteps.length - 1;
-            
-            tutorialBox.innerHTML = `
-                <button id="close-tutorial-modal" class="absolute top-4 right-4 text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
-                <div>
-                    <h3 class="font-bold text-lg mb-2">${step.title}</h3>
-                    <p class="text-sm text-gray-300">${step.content}</p>
-                </div>
-                <div class="flex justify-between items-center mt-4">
-                    <span class="text-xs text-gray-400">${currentTutorialStep + 1}/${tutorialSteps.length}</span>
-                    <div>
-                        <button id="tutorial-prev" class="bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition">Anterior</button>
-                        <button id="tutorial-next" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-3 rounded-lg text-sm transition">${isLastStep ? 'Concluir' : 'Próximo'}</button>
-                    </div>
-                </div>
-            `;
-
-            document.getElementById('close-tutorial-modal').addEventListener('click', closeTutorialModal);
-            document.getElementById('tutorial-next').addEventListener('click', handleTutorialNext);
-            document.getElementById('tutorial-prev').addEventListener('click', handleTutorialPrev);
-            document.getElementById('tutorial-prev').style.visibility = currentTutorialStep === 0 ? 'hidden' : 'visible';
-        }
-
-        function handleTutorialNext() {
-            if (currentTutorialStep < tutorialSteps.length - 1) {
-                currentTutorialStep++;
-                const nextStep = tutorialSteps[currentTutorialStep];
-                if (nextStep.preAction) {
-                   nextStep.preAction();
-                }
-                setTimeout(renderTutorialStep, 100);
-            } else {
-                closeTutorialModal();
-            }
-        }
-
-        function handleTutorialPrev() {
-            if (currentTutorialStep > 0) {
-                currentTutorialStep--;
-                 const prevStep = tutorialSteps[currentTutorialStep];
-                if (prevStep.preAction) {
-                   prevStep.preAction();
-                }
-                setTimeout(renderTutorialStep, 100);
-            }
-        }
-
-        function openTutorialModal() {
-            currentTutorialStep = 0;
-            if (tutorialSteps[0].preAction) tutorialSteps[0].preAction();
-            tutorialModal.classList.remove('hidden');
-            setTimeout(renderTutorialStep, 100);
-        }
-
-        function closeTutorialModal() {
-            localStorage.setItem(`tutorial_shown_${currentUser.uid}`, 'true');
-            tutorialModal.classList.add('hidden');
-            document.querySelectorAll('.tutorial-highlight').forEach(el => el.classList.remove('tutorial-highlight'));
-        }
-
-        document.getElementById('tutorial-button').addEventListener('click', openTutorialModal);
-
+        function addUserMessage(message) { /* ... */ }
+        function addBotMessage(message) { /* ... */ }
+        async function callGemini(payload) { /* ... */ }
+        async function processChatMessage(message) { /* ... */ }
 
         // =================================================================================
-        // 9. LÓGICA DE EDIÇÃO DO HISTÓRICO
+        // 9. LÓGICA DO BOTÃO DE CHAT ARRASTÁVEL
         // =================================================================================
-        function parseTimeToSeconds(timeString) {
-             const parts = timeString.split(':').map(Number);
-            if (parts.length === 3 && parts.every(p => !isNaN(p) && p >= 0)) {
-                return parts[0] * 3600 + parts[1] * 60 + parts[2];
-            }
-            return null;
-        }
-
-        async function handleDeleteHistory(button) {
-            const entryId = button.dataset.id;
-            button.disabled = true;
-            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
-            try {
-                await deleteHistoryEntry(entryId);
-            } catch (error) {
-                console.error("Falha ao excluir, revertendo o botão.", error);
-                setTimeout(() => {
-                    button.disabled = false;
-                    button.innerHTML = `<i class="fas fa-trash"></i>`;
-                }, 1000);
-            }
-        }
-
-        function handleEditHistory(button) {
-            const entryId = button.dataset.id;
-            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
-            const entryData = recentHistory.find(e => e.id === entryId);
-            if (!entryDiv || !entryData) return;
-
-            const tagOptionsHTML = TAG_OPTIONS.map(tag => `<option value="${tag.name}" ${tag.name === entryData.tag ? 'selected' : ''}>${tag.name}</option>`).join('');
-            
-            entryDiv.innerHTML = `
-                <div class="space-y-3">
-                    <input type="text" value="${entryData.name}" class="edit-name w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">
-                    <div class="grid grid-cols-2 gap-3">
-                        <select class="edit-tag w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg">${tagOptionsHTML}</select>
-                        <input type="text" value="${formatTime(entryData.totalActiveTime)}" class="edit-time w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-lg" placeholder="HH:MM:SS">
-                    </div>
-                    <div class="flex justify-end gap-2 mt-2">
-                        <button class="cancel-edit-btn bg-gray-500 hover:bg-gray-600 text-white font-bold py-1 px-3 rounded-lg" data-id="${entryId}">Cancelar</button>
-                        <button class="save-history-btn bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-1 px-3 rounded-lg" data-id="${entryId}">Salvar</button>
-                    </div>
-                    <p class="edit-error-message text-red-400 text-xs h-3"></p>
-                </div>
-            `;
-        }
-        
-        async function handleSaveHistory(button) {
-             const entryId = button.dataset.id;
-            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
-            const errorMessageEl = entryDiv.querySelector('.edit-error-message');
-            
-            const newName = entryDiv.querySelector('.edit-name').value.trim();
-            const newTag = entryDiv.querySelector('.edit-tag').value;
-            const newTimeStr = entryDiv.querySelector('.edit-time').value;
-            const newTimeInSeconds = parseTimeToSeconds(newTimeStr);
-
-            if (!newName) {
-                errorMessageEl.textContent = 'O nome da tarefa não pode estar vazio.';
-                return;
-            }
-            if (newTimeInSeconds === null) {
-                errorMessageEl.textContent = 'Formato de tempo inválido. Use HH:MM:SS.';
-                return;
-            }
-
-            button.disabled = true;
-            button.innerHTML = `<i class="fas fa-spinner fa-spin"></i>`;
-            
-            try {
-                const docRef = doc(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`, entryId);
-                await updateDoc(docRef, {
-                    name: newName,
-                    tag: newTag,
-                    totalActiveTime: newTimeInSeconds
-                });
-            } catch (error) {
-                console.error("Erro ao salvar a tarefa:", error);
-                errorMessageEl.textContent = 'Erro ao salvar.';
-                button.disabled = false;
-                button.innerHTML = 'Salvar';
-            }
-        }
-
-        function handleCancelEditHistory(button) {
-            const entryId = button.dataset.id;
-            const entryDiv = document.querySelector(`div[data-id="${entryId}"]`);
-            const entryData = recentHistory.find(e => e.id === entryId);
-            if (entryDiv && entryData) {
-                entryDiv.innerHTML = generateHistoryEntryHTML(entryData);
-            }
-        }
+        let isDragging = false, hasDragged = false, startX, startY, btnRect, offsetX = 0, offsetY = 0;
+        const openChatBtn = document.getElementById('open-chat-btn');
+        function initializeButtonPosition() { /* ... */ }
+        initializeButtonPosition();
+        function onDragStart(e) { /* ... */ }
+        function onDragMove(e) { /* ... */ }
+        function onDragEnd() { /* ... */ }
+        function positionChatModal() { /* ... */ }
+        openChatBtn.addEventListener('mousedown', onDragStart);
+        openChatBtn.addEventListener('touchstart', onDragStart, { passive: false });
+        openChatBtn.addEventListener('click', (e) => {
+            if (hasDragged) { e.preventDefault(); return; }
+            chatModal.classList.toggle('hidden');
+            positionChatModal();
+        });
+        window.addEventListener('resize', () => { initializeButtonPosition(); positionChatModal(); });
     </script>
 </body>
 </html>
-
 
