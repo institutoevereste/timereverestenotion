@@ -574,25 +574,43 @@
         const taskLimitError = document.getElementById('task-limit-error');
         const activeTasksContainer = document.getElementById('active-tasks-container');
         
-        newTaskForm.addEventListener('submit', async (e) => {
-             e.preventDefault();
-            if (activeTasks.length >= 3) {
-                taskLimitError.textContent = 'Pode ter no máximo 3 tarefas ativas.';
-                setTimeout(() => taskLimitError.textContent = '', 3000);
-                return;
+        async function startNewTask(taskName, taskTag) {
+            if (!taskName || !taskTag) {
+                return { success: false, message: "É necessário um nome e uma categoria para a tarefa." };
             }
-
-            const taskName = document.getElementById('task-name').value;
-            const taskTag = document.getElementById('task-tag').value;
+            if (!TAG_OPTIONS.some(t => t.name === taskTag)) {
+                return { success: false, message: `A categoria "${taskTag}" não é válida. Por favor, escolha uma da lista.` };
+            }
+            if (activeTasks.length >= 3) {
+                return { success: false, message: "Pode ter no máximo 3 tarefas ativas." };
+            }
 
             const newTask = { name: taskName, tag: taskTag, ownerId: currentUser.uid, status: 'paused', startTime: Timestamp.now(), lastStartTime: null, totalActiveTime: 0, totalPausedTime: 0, pauseCount: 0, lastPauseTime: Timestamp.now() };
 
             try {
                 const collectionRef = collection(db, `artifacts/default-app-id/users/${currentUser.uid}/active_tasks`);
                 await addDoc(collectionRef, newTask);
+                return { success: true, message: `Tarefa "${taskName}" iniciada com sucesso!` };
+            } catch (error) {
+                console.error("Error adding new task:", error);
+                return { success: false, message: "Ocorreu um erro ao iniciar a tarefa." };
+            }
+        }
+
+        newTaskForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const taskName = document.getElementById('task-name').value;
+            const taskTag = document.getElementById('task-tag').value;
+            const result = await startNewTask(taskName, taskTag);
+            if (result.success) {
                 newTaskForm.reset();
-            } catch (error) { console.error("Error adding new task:", error); }
+                taskLimitError.textContent = '';
+            } else {
+                taskLimitError.textContent = result.message;
+                setTimeout(() => taskLimitError.textContent = '', 4000);
+            }
         });
+
 
         function startTimer(task) {
             if (timerIntervals[task.id]) return;
@@ -1299,13 +1317,13 @@
         }
 
         async function processChatMessage(message) {
-             const submitButton = document.getElementById('chat-submit-btn');
+            const submitButton = document.getElementById('chat-submit-btn');
             submitButton.disabled = true;
             const typingIndicator = addBotMessage('', true);
 
             try {
                 let taskSummary = 'Nenhuma tarefa concluída ainda.';
-                if(isMasterUser) {
+                if (isMasterUser) {
                     const teamQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(30));
                     const teamSnapshot = await getDocs(teamQuery);
                     const entries = teamSnapshot.docs.map(doc => doc.data());
@@ -1316,25 +1334,56 @@
                     const userQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(20));
                     const userSnapshot = await getDocs(userQuery);
                     const entries = userSnapshot.docs.map(doc => doc.data());
-                     if (entries.length > 0) {
+                    if (entries.length > 0) {
                         taskSummary = "Aqui está um resumo das suas últimas tarefas:\n" + entries.map(e => `- "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
                     }
                 }
                 
+                const availableTags = TAG_OPTIONS.map(t => t.name).join(', ');
                 const masterPromptPart = isMasterUser ? "Você está a falar com um gestor. Forneça insights sobre a produtividade geral da equipe com base nos dados. Seja proativo em destacar padrões." : "";
-                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional em português. Use os dados das tarefas para dar respostas personalizadas. ${masterPromptPart}\n\nDados de referência:\n${taskSummary}`;
+                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional em português. Use os dados das tarefas para dar respostas personalizadas. ${masterPromptPart}
+                O usuário pode pedir para executar ações. Se o usuário quiser iniciar uma nova tarefa, responda APENAS com um objeto JSON no seguinte formato:
+                {"action": "start_task", "task_name": "nome da tarefa aqui", "task_tag": "categoria da tarefa aqui"}
+                - O "task_name" deve ser inferido da conversa.
+                - O "task_tag" DEVE ser um dos seguintes valores: ${availableTags}. Se o usuário fornecer uma categoria que não está na lista, peça para ele escolher uma válida. Se o nome ou a categoria não estiverem claros, peça mais informações ao usuário em vez de retornar o JSON.
+                - Se não for um pedido de ação, responda normalmente como texto.
+                \n\nDados de referência:\n${taskSummary}`;
                 
                 const botResponse = await callGemini(systemPrompt, chatHistory);
+                
+                try {
+                    const parsedResponse = JSON.parse(botResponse);
+                    if (parsedResponse.action) {
+                        typingIndicator.remove();
+                        await handleChatbotAction(parsedResponse);
+                        return; 
+                    }
+                } catch (error) {
+                    // Not a JSON or not an action, treat as a normal text response.
+                }
 
                 typingIndicator.querySelector('.chat-bubble').innerHTML = botResponse.replace(/\n/g, '<br>');
                 chatHistory.push({ role: "model", parts: [{ text: botResponse }] });
             } catch (error) {
                 typingIndicator.querySelector('.chat-bubble').textContent = "Erro ao processar a mensagem.";
+                 console.error("Error processing chat message:", error);
             } finally {
                 submitButton.disabled = false;
             }
         }
         
+        async function handleChatbotAction(action) {
+            switch (action.action) {
+                case 'start_task':
+                    const result = await startNewTask(action.task_name, action.task_tag);
+                    addBotMessage(result.message, false);
+                    chatHistory.push({ role: "model", parts: [{ text: result.message }] });
+                    break;
+                default:
+                    addBotMessage("Desculpe, não sei como executar essa ação.", false);
+            }
+        }
+
         const tutorialModal = document.getElementById('tutorial-modal');
         const tutorialBox = document.getElementById('tutorial-box');
         let currentTutorialStep = 0;
