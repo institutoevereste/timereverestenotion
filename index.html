@@ -8,10 +8,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script>
-        // Adiciona o construtor jsPDF ao objeto window para que o plugin autoTable o encontre
-        window.jsPDF = window.jspdf.jsPDF;
-    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf-autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
@@ -54,7 +50,7 @@
         .typing-indicator span:nth-child(1) { animation-delay: -0.32s; }
         .typing-indicator span:nth-child(2) { animation-delay: -0.16s; }
         @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
-        .pomodoro-cycle { width: 1.5rem; height: 1.5rem; border-radius: 50%; transition: background-color 0.3s ease; }
+        .pomodoro-cycle { width: 1.5rem; height: 1.5rem; border-radius: 50%; transition: background-color: 0.3s ease; }
 
         /* Estilos do Tutorial */
         .tutorial-highlight {
@@ -860,6 +856,7 @@
             const container = document.getElementById('team-dashboard-view');
             const dashboardContentId = 'team-dashboard-content';
 
+            // Se o painel ainda não foi construído, crie a sua estrutura e adicione os listeners
             if (!document.getElementById(dashboardContentId)) {
                 let headerHTML = `
                     <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
@@ -873,18 +870,33 @@
                 `;
                 if (isMasterUser) {
                     headerHTML += `
-                        <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                            <i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF
+                        <button id="export-pdf-btn" class="bg-gray-500 cursor-not-allowed text-white font-bold py-2 px-4 rounded-lg transition" disabled title="Selecione um período para exportar">
+                            <i class="fas fa-file-pdf mr-2"></i>Exportar PDF
                         </button>
                     `;
                 }
                 headerHTML += `</div><div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
                 container.innerHTML = headerHTML;
-                
-                 $('#date-range-picker').daterangepicker({
+
+                // Função auxiliar para ativar o botão de exportação
+                const enableExportButton = () => {
+                    if (isMasterUser) {
+                        const exportBtn = document.getElementById('export-pdf-btn');
+                        exportBtn.disabled = false;
+                        exportBtn.title = 'Exportar Relatório em PDF';
+                        exportBtn.classList.remove('bg-gray-500', 'cursor-not-allowed');
+                        exportBtn.classList.add('bg-green-600', 'hover:bg-green-700');
+                    }
+                };
+
+                $('#date-range-picker').daterangepicker({
                     opens: 'left',
                     locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"], "monthNames": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"], }
-                }, (start, end) => loadTeamDashboard(start.toDate(), end.toDate()));
+                }, (start, end) => {
+                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                    loadTeamDashboard(start.toDate(), end.toDate());
+                    enableExportButton();
+                });
 
                 container.querySelectorAll('.filter-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
@@ -904,19 +916,19 @@
                             end = currentMonth < 6 ? moment().startOf('year').add(5, 'months').endOf('month') : moment().endOf('year');
                         }
                         else if (period === 'year') { start = moment().startOf('year'); end = moment().endOf('year'); }
+                        
+                        $('#date-range-picker').data('daterangepicker').setStartDate(start);
+                        $('#date-range-picker').data('daterangepicker').setEndDate(end);
+
                         loadTeamDashboard(start.toDate(), end.toDate());
+                        enableExportButton();
                     });
                 });
-                 if (isMasterUser) {
+
+                if (isMasterUser) {
                     document.getElementById('export-pdf-btn').addEventListener('click', () => {
                         const picker = $('#date-range-picker').data('daterangepicker');
-                        const activeFilter = container.querySelector('.filter-btn.bg-indigo-600');
-                        
-                        if (picker.startDate.isSame(picker.endDate, 'day') && !activeFilter) {
-                           exportTeamReportToPDF(null, null); // Default to today if no range is selected
-                        } else {
-                           exportTeamReportToPDF(picker.startDate.toDate(), picker.endDate.toDate());
-                        }
+                        exportTeamReportToPDF(picker.startDate.toDate(), picker.endDate.toDate());
                     });
                 }
             }
@@ -983,13 +995,10 @@
             button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>A gerar...`;
 
             try {
-                let finalStartDate = startDate, finalEndDate = endDate;
-                if (!startDate || !endDate) {
-                    finalStartDate = moment().startOf('day').toDate();
-                    finalEndDate = moment().endOf('day').toDate();
-                }
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
                 
-                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(finalStartDate)), where('endTime', '<=', Timestamp.fromDate(finalEndDate)));
+                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)));
                 const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
@@ -1027,9 +1036,7 @@
                     acc[userEmail] = analysisText;
                     return acc;
                 }, {});
-
-                const { jsPDF } = window.jspdf;
-                const doc = new jsPDF();
+                
                 let yPosition = 22;
 
                 doc.setFontSize(18);
@@ -1037,7 +1044,7 @@
                 yPosition += 6;
                 doc.setFontSize(11);
                 doc.setTextColor(100);
-                const periodText = `Período: ${moment(finalStartDate).format('DD/MM/YYYY')} a ${moment(finalEndDate).format('DD/MM/YYYY')}`;
+                const periodText = `Período: ${moment(startDate).format('DD/MM/YYYY')} a ${moment(endDate).format('DD/MM/YYYY')}`;
                 doc.text(periodText, 14, yPosition);
                 yPosition += 12;
 
