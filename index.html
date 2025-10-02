@@ -7,6 +7,12 @@
     <title>Timer Evereste</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script>
+        // Adiciona o construtor jsPDF ao objeto window para que o plugin autoTable o encontre
+        window.jsPDF = window.jspdf.jsPDF;
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.23/jspdf-autotable.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
 
@@ -320,6 +326,9 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        const MASTER_USERS = ['deyse.pereira@evereste.org.br', 'marllon.costa@evereste.org.br'];
+        let isMasterUser = false;
+
         let currentUser = null;
         let activeTasks = [];
         let recentHistory = [];
@@ -399,6 +408,8 @@
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
+                    isMasterUser = MASTER_USERS.includes(user.email); // Define se é usuário master
+
                     if (user.email) {
                         const namePart = user.email.split('@')[0];
                         const firstName = namePart.split('.')[0].split('-')[0];
@@ -424,6 +435,7 @@
 
                 } else {
                     currentUser = null;
+                    isMasterUser = false;
                     currentUserName = '';
                     authContainer.classList.remove('hidden');
                     appContainer.classList.add('hidden');
@@ -802,7 +814,7 @@
                             </div>
                         </div>`;
                     
-                    new Chart(document.getElementById('my-perf-category-chart').getContext('2d'), { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } } } } });
+                    new Chart(document.getElementById('my-perf-category-chart').getContext('2d'), { type: 'doughnut', data: { labels: chartLabels, datasets: [{ data: chartData, backgroundColor: generateColors(chartData.length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#d1d5db' } }, tooltip: { callbacks: { label: (context) => `${context.label}: ${formatTime(context.raw)}` } } } } });
                 } catch (error) {
                     console.error("Error loading My Performance Data:", error);
                     contentContainer.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados.</p>`;
@@ -829,38 +841,49 @@
         async function loadTeamDashboard(startDate = null, endDate = null) {
             const container = document.getElementById('team-dashboard-view');
             const dashboardContentId = 'team-dashboard-content';
-            let dashboardContent = document.getElementById(dashboardContentId);
-
-            if (!dashboardContent) {
-                 container.innerHTML = `
-                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
-                        <button class="filter-btn bg-indigo-600" data-period="today">Hoje</button>
-                        <button class="filter-btn" data-period="week">Esta Semana</button>
-                        <button class="filter-btn" data-period="month">Este Mês</button>
-                        <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
-                    </div>
-                    <div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
-                dashboardContent = document.getElementById(dashboardContentId);
-                
-                $('#date-range-picker').daterangepicker({
-                    opens: 'left',
-                    locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
-                }, function(start, end) {
-                    loadTeamDashboard(start.toDate(), end.toDate());
-                });
-                
-                container.querySelectorAll('.filter-btn').forEach(btn => {
-                    btn.addEventListener('click', (e) => {
-                        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                        e.target.classList.add('bg-indigo-600');
-                        const period = e.target.dataset.period;
-                        if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
-                        else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
-                        else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
-                    });
-                });
+            
+            // Gerar o HTML base do painel, incluindo o botão de exportação se for master user
+            let headerHTML = `
+                <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
+                    <button class="filter-btn ${!startDate && !endDate ? 'bg-indigo-600' : ''}" data-period="today">Hoje</button>
+                    <button class="filter-btn" data-period="week">Esta Semana</button>
+                    <button class="filter-btn" data-period="month">Este Mês</button>
+                    <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
+            `;
+            if (isMasterUser) {
+                headerHTML += `
+                    <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                        <i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF
+                    </button>
+                `;
             }
+            headerHTML += `</div><div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
+            container.innerHTML = headerHTML;
 
+            const dashboardContent = document.getElementById(dashboardContentId);
+
+            // Configurar Date Range Picker e listeners dos botões
+            $('#date-range-picker').daterangepicker({
+                opens: 'left',
+                locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
+            }, (start, end) => loadTeamDashboard(start.toDate(), end.toDate()));
+            
+            container.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                    e.target.classList.add('bg-indigo-600');
+                    const period = e.target.dataset.period;
+                    if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
+                    else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
+                    else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
+                });
+            });
+
+            if (isMasterUser) {
+                 document.getElementById('export-pdf-btn').addEventListener('click', () => exportTeamReportToPDF(startDate, endDate));
+            }
+            
+            // Lógica de carregamento de dados
             dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
 
             try {
@@ -868,7 +891,9 @@
                 if(startDate && endDate){
                     timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
                 } else {
-                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(300));
+                    const defaultStartDate = moment().startOf('day').toDate();
+                    const defaultEndDate = moment().endOf('day').toDate();
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(defaultStartDate)), where('endTime', '<=', Timestamp.fromDate(defaultEndDate)), orderBy('endTime', 'desc'));
                 }
 
                 const snapshot = await getDocs(timeEntriesQuery);
@@ -901,12 +926,103 @@
                         </table>
                      </div>`;
                 
-                new Chart(document.getElementById('team-category-chart').getContext('2d'), { type: 'bar', data: { labels: filteredTimeByCategory.map(i => i[0]), datasets: [{ label: 'Tempo', data: filteredTimeByCategory.map(i => i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
-                new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false } } } });
+                new Chart(document.getElementById('team-category-chart').getContext('2d'), { type: 'bar', data: { labels: filteredTimeByCategory.map(i => i[0]), datasets: [{ label: 'Tempo', data: filteredTimeByCategory.map(i => i[1]), backgroundColor: generateColors(filteredTimeByCategory.length) }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { ticks: { color: '#d1d5db', callback: (value) => formatTime(value) } }, x: { ticks: { color: '#d1d5db' } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatTime(context.raw) } } } } });
+                new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db', callback: (value) => formatTime(value) } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatTime(context.raw) } } } } });
             } catch (error) {
                 console.error("Error loading Team Dashboard:", error);
                 dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
                 if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
+            }
+        }
+
+        async function exportTeamReportToPDF(startDate, endDate) {
+            const button = document.getElementById('export-pdf-btn');
+            if (!isMasterUser) {
+                console.error("Acesso negado.");
+                return;
+            }
+
+            button.disabled = true;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...`;
+
+            try {
+                let timeEntriesQuery;
+                 if (startDate && endDate) {
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
+                } else {
+                    const defaultStartDate = moment().startOf('day').toDate();
+                    const defaultEndDate = moment().endOf('day').toDate();
+                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(defaultStartDate)), where('endTime', '<=', Timestamp.fromDate(defaultEndDate)), orderBy('endTime', 'desc'));
+                }
+
+                const snapshot = await getDocs(timeEntriesQuery);
+                const allEntries = snapshot.docs.map(doc => ({...doc.data(), id: doc.id }));
+
+                if (allEntries.length === 0) {
+                    const originalText = button.innerHTML;
+                    button.innerHTML = 'Nenhum dado para exportar';
+                    button.classList.replace('bg-green-600', 'bg-yellow-500');
+                    setTimeout(() => {
+                        button.innerHTML = `<i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF`;
+                        button.classList.replace('bg-yellow-500', 'bg-green-600');
+                        button.disabled = false;
+                    }, 3000);
+                    return;
+                }
+
+                const performanceSummary = allEntries.map(e => `Usuário: ${e.userEmail}, Tarefa: "${e.name}", Categoria: "${e.tag}", Duração: ${formatTime(e.totalActiveTime)}, Pausas: ${e.pauseCount}, Data: ${new Date(e.endTime.seconds * 1000).toLocaleDateString()}`).join('\n');
+
+                const systemPrompt = `Você é um analista de produtividade sênior. Analise os seguintes dados de registro de tempo de uma equipe e escreva uma análise concisa em português. A análise deve ter no máximo 200 palavras e focar nos seguintes pontos:
+                1. **Desempenho Geral da Equipe:** Comente sobre o volume total de trabalho, o número de tarefas e a produtividade geral.
+                2. **Distribuição de Tarefas:** Identifique as categorias onde a equipe mais investe tempo.
+                3. **Destaques Individuais:** Mencione de forma geral se há colaboradores com alto volume de horas, sem citar nomes diretamente para manter a privacidade, mas comente o padrão.
+                4. **Pontos de Melhoria:** Sugira possíveis áreas para otimização ou foco, com base nos dados (ex: muitas pausas, tempo excessivo em tarefas administrativas, etc.).
+                Seja objetivo e profissional. Comece com "Análise de Desempenho da Equipe".`;
+                
+                const analysisHistory = [{ role: "user", parts: [{ text: `Por favor, analise os seguintes dados:\n${performanceSummary}` }] }];
+                const aiAnalysis = await callGemini(systemPrompt, analysisHistory);
+
+                const { jsPDF } = window.jspdf;
+                const doc = new jsPDF();
+
+                doc.setFontSize(18);
+                doc.text("Relatório de Desempenho da Equipe - Timer Evereste", 14, 22);
+                doc.setFontSize(11);
+                doc.setTextColor(100);
+                const periodText = startDate && endDate ? `Período: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}` : `Período: ${moment().startOf('day').toDate().toLocaleDateString()}`;
+                doc.text(periodText, 14, 28);
+
+                doc.setFontSize(14);
+                doc.setTextColor(0);
+                doc.text("Análise da IA", 14, 40);
+                const splitAnalysis = doc.splitTextToSize(aiAnalysis, 180);
+                doc.setFontSize(10);
+                doc.text(splitAnalysis, 14, 48);
+
+                const tableColumn = ["Colaborador", "Tarefa", "Categoria", "Tempo Gasto", "Data"];
+                const tableRows = allEntries.map(entry => [
+                    entry.userEmail,
+                    entry.name,
+                    entry.tag,
+                    formatTime(entry.totalActiveTime),
+                    new Date(entry.endTime.seconds * 1000).toLocaleDateString()
+                ]);
+
+                doc.autoTable({
+                    head: [tableColumn],
+                    body: tableRows,
+                    startY: doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 100,
+                    theme: 'striped',
+                    headStyles: { fillColor: [79, 70, 229] }
+                });
+
+                doc.output('dataurlnewwindow');
+
+            } catch (error) {
+                console.error("Erro ao gerar PDF:", error);
+            } finally {
+                button.disabled = false;
+                button.innerHTML = `<i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF`;
             }
         }
 
@@ -982,7 +1098,7 @@
                 const timeByCategory = entries.reduce((acc, curr) => { acc[curr.tag] = (acc[curr.tag] || 0) + curr.totalActiveTime; return acc; }, {});
                 
                 container.innerHTML = `<p class="text-center text-3xl font-bold text-indigo-400 mb-4">${formatTime(totalTime)}</p><div class="h-64"><canvas id="profile-category-chart"></canvas></div>`;
-                new Chart(document.getElementById('profile-category-chart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(timeByCategory), datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+                new Chart(document.getElementById('profile-category-chart').getContext('2d'), { type: 'pie', data: { labels: Object.keys(timeByCategory), datasets: [{ data: Object.values(timeByCategory), backgroundColor: generateColors(Object.keys(timeByCategory).length) }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => `${context.label}: ${formatTime(context.raw)}` } } } } });
             } catch(error) {
                 console.error("Erro ao carregar o dashboard do perfil:", error);
                 container.innerHTML = `<div class="text-red-400 p-4">Ocorreu um erro ao carregar o seu desempenho.</div>`;
@@ -1188,12 +1304,25 @@
             const typingIndicator = addBotMessage('', true);
 
             try {
-                const q = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(20));
-                const querySnapshot = await getDocs(q);
-                const entries = querySnapshot.docs.map(doc => doc.data());
-                const taskSummary = entries.map(e => `- "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
-
-                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional. Use os dados das tarefas do usuário para dar respostas personalizadas. Se não souber a resposta, admita. Aqui está um resumo das últimas tarefas do usuário:\n${taskSummary || 'Nenhuma tarefa concluída ainda.'}`;
+                let taskSummary = 'Nenhuma tarefa concluída ainda.';
+                if(isMasterUser) {
+                    const teamQuery = query(collectionGroup(db, 'time_entries'), orderBy('endTime', 'desc'), limit(30));
+                    const teamSnapshot = await getDocs(teamQuery);
+                    const entries = teamSnapshot.docs.map(doc => doc.data());
+                    if (entries.length > 0) {
+                        taskSummary = "Aqui está um resumo das últimas atividades da equipe:\n" + entries.map(e => `- Tarefa de ${e.userEmail}: "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
+                    }
+                } else {
+                    const userQuery = query(collection(db, `artifacts/default-app-id/users/${currentUser.uid}/time_entries`), orderBy('endTime', 'desc'), limit(20));
+                    const userSnapshot = await getDocs(userQuery);
+                    const entries = userSnapshot.docs.map(doc => doc.data());
+                     if (entries.length > 0) {
+                        taskSummary = "Aqui está um resumo das suas últimas tarefas:\n" + entries.map(e => `- "${e.name}" na categoria "${e.tag}" durou ${formatTime(e.totalActiveTime)}.`).join('\n');
+                    }
+                }
+                
+                const masterPromptPart = isMasterUser ? "Você está a falar com um gestor. Forneça insights sobre a produtividade geral da equipe com base nos dados. Seja proativo em destacar padrões." : "";
+                const systemPrompt = `Você é o Yeti, um assistente de produtividade IA para o app "Timer Evereste". O nome do usuário é ${currentUserName}. Responda de forma amigável, concisa e motivacional em português. Use os dados das tarefas para dar respostas personalizadas. ${masterPromptPart}\n\nDados de referência:\n${taskSummary}`;
                 
                 const botResponse = await callGemini(systemPrompt, chatHistory);
 
