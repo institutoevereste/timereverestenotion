@@ -952,7 +952,7 @@
                 if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
             }
         }
-
+        
         async function exportTeamReportToPDF(startDate, endDate) {
             const button = document.getElementById('export-pdf-btn');
             if (!isMasterUser) {
@@ -961,11 +961,12 @@
             }
 
             button.disabled = true;
-            button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>Gerando...`;
+            button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>A gerar...`;
 
             try {
+                // 1. Obter os dados
                 let timeEntriesQuery;
-                 if (startDate && endDate) {
+                if (startDate && endDate) {
                     timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
                 } else {
                     const defaultStartDate = moment().startOf('day').toDate();
@@ -974,10 +975,9 @@
                 }
 
                 const snapshot = await getDocs(timeEntriesQuery);
-                const allEntries = snapshot.docs.map(doc => ({...doc.data(), id: doc.id }));
+                const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
                 if (allEntries.length === 0) {
-                    const originalText = button.innerHTML;
                     button.innerHTML = 'Nenhum dado para exportar';
                     button.classList.replace('bg-green-600', 'bg-yellow-500');
                     setTimeout(() => {
@@ -987,36 +987,74 @@
                     }, 3000);
                     return;
                 }
-
-                const performanceSummary = allEntries.map(e => `Usuário: ${e.userEmail}, Tarefa: "${e.name}", Categoria: "${e.tag}", Duração: ${formatTime(e.totalActiveTime)}, Pausas: ${e.pauseCount}, Data: ${new Date(e.endTime.seconds * 1000).toLocaleDateString()}`).join('\n');
-
-                const systemPrompt = `Você é um analista de produtividade sênior. Analise os seguintes dados de registro de tempo de uma equipe e escreva uma análise concisa em português. A análise deve ter no máximo 200 palavras e focar nos seguintes pontos:
-                1. **Desempenho Geral da Equipe:** Comente sobre o volume total de trabalho, o número de tarefas e a produtividade geral.
-                2. **Distribuição de Tarefas:** Identifique as categorias onde a equipe mais investe tempo.
-                3. **Destaques Individuais:** Mencione de forma geral se há colaboradores com alto volume de horas, sem citar nomes diretamente para manter a privacidade, mas comente o padrão.
-                4. **Pontos de Melhoria:** Sugira possíveis áreas para otimização ou foco, com base nos dados (ex: muitas pausas, tempo excessivo em tarefas administrativas, etc.).
-                Seja objetivo e profissional. Comece com "Análise de Desempenho da Equipe".`;
                 
-                const analysisHistory = [{ role: "user", parts: [{ text: `Por favor, analise os seguintes dados:\n${performanceSummary}` }] }];
-                const aiAnalysis = await callGemini(systemPrompt, analysisHistory);
+                // 2. Agrupar dados por usuário
+                const entriesByUser = allEntries.reduce((acc, entry) => {
+                    (acc[entry.userEmail] = acc[entry.userEmail] || []).push(entry);
+                    return acc;
+                }, {});
 
+                // 3. Gerar Análise Geral da Equipa com IA
+                const teamSummary = `Total de Tarefas: ${allEntries.length}, Total de Horas: ${formatTime(allEntries.reduce((sum, e) => sum + e.totalActiveTime, 0))}.`;
+                const teamSystemPrompt = `Você é um analista de produtividade sênior. Com base no resumo (${teamSummary}), escreva uma análise concisa (máximo de 150 palavras) sobre o desempenho geral da equipe. Aborde o volume de trabalho, a distribuição de tarefas por categoria (se os dados forem fornecidos), e identifique padrões gerais e pontos de melhoria.`;
+                const teamAnalysis = await callGemini(teamSystemPrompt, [{ role: "user", parts: [{ text: `Resumo dos dados: ${JSON.stringify(allEntries)}` }] }]);
+
+                // 4. Gerar Análise Individual para Cada Usuário com IA
+                const individualAnalyses = {};
+                const coreTasks = ['Análise de Dados', 'Web Design', 'UX', 'UI', 'App', 'Edição de Vídeos', 'Edição de Fotos', 'Audiovisual', 'Design Gráfico', 'Design de Produtos', 'Design 3D', 'Motion Design'];
+                
+                for (const userEmail in entriesByUser) {
+                    const userEntries = entriesByUser[userEmail];
+                    const totalUserTime = userEntries.reduce((sum, e) => sum + e.totalActiveTime, 0);
+                    const coreTime = userEntries.filter(e => coreTasks.includes(e.tag)).reduce((sum, e) => sum + e.totalActiveTime, 0);
+                    const productivityPercentage = totalUserTime > 0 ? ((coreTime / totalUserTime) * 100).toFixed(1) : 0;
+
+                    const userSummary = `O usuário registou um total de ${formatTime(totalUserTime)} em ${userEntries.length} tarefas. A sua percentagem de produtividade (tempo em tarefas centrais) foi de ${productivityPercentage}%.`;
+                    const userSystemPrompt = `Você é um analista de produtividade. Com base no resumo (${userSummary}), escreva uma análise individual concisa (máximo de 100 palavras) para ${userEmail}. Comente sobre o seu volume de trabalho, a percentagem de produtividade e sugira focos de melhoria.`;
+                    individualAnalyses[userEmail] = await callGemini(userSystemPrompt, [{ role: "user", parts: [{ text: `Dados do usuário: ${JSON.stringify(userEntries)}` }] }]);
+                }
+
+                // 5. Montar o PDF
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
+                let yPosition = 22;
 
                 doc.setFontSize(18);
-                doc.text("Relatório de Desempenho da Equipe - Timer Evereste", 14, 22);
+                doc.text("Relatório de Desempenho da Equipe - Timer Evereste", 14, yPosition);
+                yPosition += 6;
                 doc.setFontSize(11);
                 doc.setTextColor(100);
-                const periodText = startDate && endDate ? `Período: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}` : `Período: ${moment().startOf('day').toDate().toLocaleDateString()}`;
-                doc.text(periodText, 14, 28);
+                const periodText = startDate && endDate ? `Período: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}` : `Período: Hoje (${moment().format('DD/MM/YYYY')})`;
+                doc.text(periodText, 14, yPosition);
+                yPosition += 12;
 
                 doc.setFontSize(14);
                 doc.setTextColor(0);
-                doc.text("Análise da IA", 14, 40);
-                const splitAnalysis = doc.splitTextToSize(aiAnalysis, 180);
+                doc.text("Análise de Desempenho Geral da Equipe (IA)", 14, yPosition);
+                yPosition += 8;
                 doc.setFontSize(10);
-                doc.text(splitAnalysis, 14, 48);
-
+                const splitTeamAnalysis = doc.splitTextToSize(teamAnalysis, 180);
+                doc.text(splitTeamAnalysis, 14, yPosition);
+                yPosition += splitTeamAnalysis.length * 5 + 10;
+                
+                // Adicionar análises individuais
+                for (const userEmail in individualAnalyses) {
+                     if (yPosition > 250) { // Check for page break
+                        doc.addPage();
+                        yPosition = 22;
+                    }
+                    doc.setFontSize(12);
+                    doc.setTextColor(0);
+                    doc.text(`Análise Individual: ${userEmail}`, 14, yPosition);
+                    yPosition += 7;
+                    doc.setFontSize(10);
+                    const splitUserAnalysis = doc.splitTextToSize(individualAnalyses[userEmail], 180);
+                    doc.text(splitUserAnalysis, 14, yPosition);
+                    yPosition += splitUserAnalysis.length * 5 + 10;
+                }
+                
+                doc.addPage();
+                doc.text("Log de Atividades Detalhado", 14, 22);
                 const tableColumn = ["Colaborador", "Tarefa", "Categoria", "Tempo Gasto", "Data"];
                 const tableRows = allEntries.map(entry => [
                     entry.userEmail,
@@ -1029,7 +1067,7 @@
                 doc.autoTable({
                     head: [tableColumn],
                     body: tableRows,
-                    startY: doc.previousAutoTable ? doc.previousAutoTable.finalY + 10 : 100,
+                    startY: 30,
                     theme: 'striped',
                     headStyles: { fillColor: [79, 70, 229] }
                 });
@@ -1038,11 +1076,18 @@
 
             } catch (error) {
                 console.error("Erro ao gerar PDF:", error);
+                 button.innerHTML = 'Erro ao gerar';
+                 button.classList.replace('bg-green-600', 'bg-red-600');
             } finally {
-                button.disabled = false;
-                button.innerHTML = `<i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF`;
+                 setTimeout(() => {
+                    button.disabled = false;
+                    button.innerHTML = `<i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF`;
+                    button.classList.remove('bg-red-600', 'bg-yellow-500');
+                    button.classList.add('bg-green-600');
+                }, 4000);
             }
         }
+
 
         async function deleteHistoryEntry(entryId) {
              if (!currentUser || !entryId) {
