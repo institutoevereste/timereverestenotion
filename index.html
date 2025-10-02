@@ -326,7 +326,7 @@
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        const MASTER_USERS = ['deyse.pereira@evereste.org.br', 'marllon.costa@evereste.org.br'];
+        const MASTER_USERS = ['deyse.pereira@evereste.org.br', 'marllon.costa@evereste.org.br', 'bruno.diogo@evereste.org.br'];
         let isMasterUser = false;
 
         let currentUser = null;
@@ -856,63 +856,86 @@
             renderMyPerformanceData(); // Carga inicial
         }
 
-        async function loadTeamDashboard(startDate = null, endDate = null) {
+        async function loadTeamDashboard(startDate, endDate) {
             const container = document.getElementById('team-dashboard-view');
             const dashboardContentId = 'team-dashboard-content';
-            
-            // Gerar o HTML base do painel, incluindo o botão de exportação se for master user
-            let headerHTML = `
-                <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
-                    <button class="filter-btn ${!startDate && !endDate ? 'bg-indigo-600' : ''}" data-period="today">Hoje</button>
-                    <button class="filter-btn" data-period="week">Esta Semana</button>
-                    <button class="filter-btn" data-period="month">Este Mês</button>
-                    <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Selecione um período">
-            `;
-            if (isMasterUser) {
-                headerHTML += `
-                    <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                        <i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF
-                    </button>
+
+            if (!document.getElementById(dashboardContentId)) {
+                let headerHTML = `
+                    <div class="bg-gray-800 p-4 rounded-xl shadow-lg mb-6 flex flex-wrap items-center justify-center gap-4">
+                        <button class="filter-btn" data-period="today">Hoje</button>
+                        <button class="filter-btn" data-period="week">Esta Semana</button>
+                        <button class="filter-btn" data-period="month">Este Mês</button>
+                        <button class="filter-btn" data-period="quarter">Trimestre</button>
+                        <button class="filter-btn" data-period="semester">Semestre</button>
+                        <button class="filter-btn" data-period="year">Anual</button>
+                        <input type="text" id="date-range-picker" class="bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-center" placeholder="Período Customizado">
                 `;
-            }
-            headerHTML += `</div><div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
-            container.innerHTML = headerHTML;
+                if (isMasterUser) {
+                    headerHTML += `
+                        <button id="export-pdf-btn" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                            <i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF
+                        </button>
+                    `;
+                }
+                headerHTML += `</div><div id="${dashboardContentId}" class="relative min-h-[400px]"></div>`;
+                container.innerHTML = headerHTML;
+                
+                 $('#date-range-picker').daterangepicker({
+                    opens: 'left',
+                    locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"], "monthNames": ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"], }
+                }, (start, end) => loadTeamDashboard(start.toDate(), end.toDate()));
 
-            const dashboardContent = document.getElementById(dashboardContentId);
+                container.querySelectorAll('.filter-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
+                        e.target.classList.add('bg-indigo-600');
+                        document.getElementById('date-range-picker').value = '';
 
-            // Configurar Date Range Picker e listeners dos botões
-            $('#date-range-picker').daterangepicker({
-                opens: 'left',
-                locale: { format: 'DD/MM/YYYY', "applyLabel": "Aplicar", "cancelLabel": "Cancelar", "fromLabel": "De", "toLabel": "Para", "daysOfWeek": ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"],"monthNames": ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"], }
-            }, (start, end) => loadTeamDashboard(start.toDate(), end.toDate()));
-            
-            container.querySelectorAll('.filter-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    container.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('bg-indigo-600'));
-                    e.target.classList.add('bg-indigo-600');
-                    const period = e.target.dataset.period;
-                    if(period === 'today') loadTeamDashboard(moment().startOf('day').toDate(), moment().endOf('day').toDate());
-                    else if(period === 'week') loadTeamDashboard(moment().startOf('week').toDate(), moment().endOf('week').toDate());
-                    else if(period === 'month') loadTeamDashboard(moment().startOf('month').toDate(), moment().endOf('month').toDate());
+                        const period = e.target.dataset.period;
+                        let start, end;
+                        if (period === 'today') { start = moment().startOf('day'); end = moment().endOf('day'); }
+                        else if (period === 'week') { start = moment().startOf('week'); end = moment().endOf('week'); }
+                        else if (period === 'month') { start = moment().startOf('month'); end = moment().endOf('month'); }
+                        else if (period === 'quarter') { start = moment().startOf('quarter'); end = moment().endOf('quarter'); }
+                        else if (period === 'semester') {
+                            const currentMonth = moment().month();
+                            start = currentMonth < 6 ? moment().startOf('year') : moment().startOf('year').add(6, 'months');
+                            end = currentMonth < 6 ? moment().startOf('year').add(5, 'months').endOf('month') : moment().endOf('year');
+                        }
+                        else if (period === 'year') { start = moment().startOf('year'); end = moment().endOf('year'); }
+                        loadTeamDashboard(start.toDate(), end.toDate());
+                    });
                 });
-            });
-
-            if (isMasterUser) {
-                 document.getElementById('export-pdf-btn').addEventListener('click', () => exportTeamReportToPDF(startDate, endDate));
+                 if (isMasterUser) {
+                    document.getElementById('export-pdf-btn').addEventListener('click', () => {
+                        const picker = $('#date-range-picker').data('daterangepicker');
+                        const activeFilter = container.querySelector('.filter-btn.bg-indigo-600');
+                        
+                        if (picker.startDate.isSame(picker.endDate, 'day') && !activeFilter) {
+                           exportTeamReportToPDF(null, null); // Default to today if no range is selected
+                        } else {
+                           exportTeamReportToPDF(picker.startDate.toDate(), picker.endDate.toDate());
+                        }
+                    });
+                }
             }
             
-            // Lógica de carregamento de dados
+            const dashboardContent = document.getElementById(dashboardContentId);
             dashboardContent.innerHTML = `<div class="absolute inset-0 flex items-center justify-center"><i class="fas fa-spinner fa-spin text-4xl text-indigo-400"></i></div>`;
 
             try {
-                let timeEntriesQuery;
-                if(startDate && endDate){
-                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
-                } else {
-                    const defaultStartDate = moment().startOf('day').toDate();
-                    const defaultEndDate = moment().endOf('day').toDate();
-                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(defaultStartDate)), where('endTime', '<=', Timestamp.fromDate(defaultEndDate)), orderBy('endTime', 'desc'));
+                let finalStartDate = startDate, finalEndDate = endDate;
+                if (!startDate || !endDate) {
+                    finalStartDate = moment().startOf('day').toDate();
+                    finalEndDate = moment().endOf('day').toDate();
+                     const todayButton = container.querySelector('.filter-btn[data-period="today"]');
+                    if(todayButton && !container.querySelector('.filter-btn.bg-indigo-600')) {
+                        todayButton.classList.add('bg-indigo-600');
+                    }
                 }
+               
+                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(finalStartDate)), where('endTime', '<=', Timestamp.fromDate(finalEndDate)), orderBy('endTime', 'desc'));
 
                 const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => doc.data());
@@ -948,62 +971,46 @@
                 new Chart(document.getElementById('team-user-chart').getContext('2d'), { type: 'bar', data: { labels: topUsers.map(u => u[0]), datasets: [{ label: 'Tempo', data: topUsers.map(u => u[1]), backgroundColor: generateColors(topUsers.length) }] }, options: { responsive: true, maintainAspectRatio: false, indexAxis: 'y', scales: { y: { ticks: { color: '#d1d5db' } }, x: { ticks: { color: '#d1d5db', callback: (value) => formatTime(value) } } }, plugins: { legend: { display: false }, tooltip: { callbacks: { label: (context) => formatTime(context.raw) } } } } });
             } catch (error) {
                 console.error("Error loading Team Dashboard:", error);
-                dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe.</p>`;
-                if (error.code === 'failed-precondition') console.error("Falta de índice no Firestore. Crie o índice através do link na consola.");
+                dashboardContent.innerHTML = `<p class="text-red-400 text-center">Ocorreu um erro ao carregar os dados da equipe. Verifique a consola para um link de criação de índice no Firebase.</p>`;
             }
         }
         
-        async function exportTeamReportToPDF(startDate, endDate) {
+       async function exportTeamReportToPDF(startDate, endDate) {
             const button = document.getElementById('export-pdf-btn');
-            if (!isMasterUser) {
-                console.error("Acesso negado.");
-                return;
-            }
+            if (!isMasterUser) return;
 
             button.disabled = true;
             button.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>A gerar...`;
 
             try {
-                // 1. Obter os dados
-                let timeEntriesQuery;
-                if (startDate && endDate) {
-                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(startDate)), where('endTime', '<=', Timestamp.fromDate(endDate)), orderBy('endTime', 'desc'));
-                } else {
-                    const defaultStartDate = moment().startOf('day').toDate();
-                    const defaultEndDate = moment().endOf('day').toDate();
-                    timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(defaultStartDate)), where('endTime', '<=', Timestamp.fromDate(defaultEndDate)), orderBy('endTime', 'desc'));
+                let finalStartDate = startDate, finalEndDate = endDate;
+                if (!startDate || !endDate) {
+                    finalStartDate = moment().startOf('day').toDate();
+                    finalEndDate = moment().endOf('day').toDate();
                 }
-
+                
+                const timeEntriesQuery = query(collectionGroup(db, 'time_entries'), where('endTime', '>=', Timestamp.fromDate(finalStartDate)), where('endTime', '<=', Timestamp.fromDate(finalEndDate)));
                 const snapshot = await getDocs(timeEntriesQuery);
                 const allEntries = snapshot.docs.map(doc => ({ ...doc.data(), id: doc.id }));
 
                 if (allEntries.length === 0) {
                     button.innerHTML = 'Nenhum dado para exportar';
                     button.classList.replace('bg-green-600', 'bg-yellow-500');
-                    setTimeout(() => {
-                        button.innerHTML = `<i class="fas fa-file-pdf mr-2"></i>Exportar Relatório PDF`;
-                        button.classList.replace('bg-yellow-500', 'bg-green-600');
-                        button.disabled = false;
-                    }, 3000);
                     return;
                 }
-                
-                // 2. Agrupar dados por usuário
+
                 const entriesByUser = allEntries.reduce((acc, entry) => {
                     (acc[entry.userEmail] = acc[entry.userEmail] || []).push(entry);
                     return acc;
                 }, {});
 
-                // 3. Gerar Análise Geral da Equipa com IA
                 const teamSummary = `Total de Tarefas: ${allEntries.length}, Total de Horas: ${formatTime(allEntries.reduce((sum, e) => sum + e.totalActiveTime, 0))}.`;
                 const teamSystemPrompt = `Você é um analista de produtividade sênior. Com base no resumo (${teamSummary}), escreva uma análise concisa (máximo de 150 palavras) sobre o desempenho geral da equipe. Aborde o volume de trabalho, a distribuição de tarefas por categoria (se os dados forem fornecidos), e identifique padrões gerais e pontos de melhoria.`;
-                const teamAnalysis = await callGemini(teamSystemPrompt, [{ role: "user", parts: [{ text: `Resumo dos dados: ${JSON.stringify(allEntries)}` }] }]);
+                const teamAnalysisPromise = callGemini(teamSystemPrompt, [{ role: "user", parts: [{ text: `Resumo dos dados: ${JSON.stringify(allEntries)}` }] }]);
 
-                // 4. Gerar Análise Individual para Cada Usuário com IA
-                const individualAnalyses = {};
-                const coreTasks = ['Análise de Dados', 'Web Design', 'UX', 'UI', 'App', 'Edição de Vídeos', 'Edição de Fotos', 'Audiovisual', 'Design Gráfico', 'Design de Produtos', 'Design 3D', 'Motion Design'];
+                const coreTasks = ['Análise de Dados', 'Web Design', 'UX', 'UI', 'App', 'Edição de Vídeos', 'Edição de Fotos', 'Audiovisual', 'Design Gráfico', 'Design de Produtos', 'Design 3D', 'Motion Design', 'Gestão de Projetos', 'Desenvolvimento'];
                 
-                for (const userEmail in entriesByUser) {
+                const individualAnalysisPromises = Object.keys(entriesByUser).map(async (userEmail) => {
                     const userEntries = entriesByUser[userEmail];
                     const totalUserTime = userEntries.reduce((sum, e) => sum + e.totalActiveTime, 0);
                     const coreTime = userEntries.filter(e => coreTasks.includes(e.tag)).reduce((sum, e) => sum + e.totalActiveTime, 0);
@@ -1011,10 +1018,16 @@
 
                     const userSummary = `O usuário registou um total de ${formatTime(totalUserTime)} em ${userEntries.length} tarefas. A sua percentagem de produtividade (tempo em tarefas centrais) foi de ${productivityPercentage}%.`;
                     const userSystemPrompt = `Você é um analista de produtividade. Com base no resumo (${userSummary}), escreva uma análise individual concisa (máximo de 100 palavras) para ${userEmail}. Comente sobre o seu volume de trabalho, a percentagem de produtividade e sugira focos de melhoria.`;
-                    individualAnalyses[userEmail] = await callGemini(userSystemPrompt, [{ role: "user", parts: [{ text: `Dados do usuário: ${JSON.stringify(userEntries)}` }] }]);
-                }
+                    const analysisText = await callGemini(userSystemPrompt, [{ role: "user", parts: [{ text: `Dados do usuário: ${JSON.stringify(userEntries)}` }] }]);
+                    return { userEmail, analysisText };
+                });
 
-                // 5. Montar o PDF
+                const [teamAnalysis, individualAnalysesResults] = await Promise.all([teamAnalysisPromise, Promise.all(individualAnalysisPromises)]);
+                const individualAnalyses = individualAnalysesResults.reduce((acc, { userEmail, analysisText }) => {
+                    acc[userEmail] = analysisText;
+                    return acc;
+                }, {});
+
                 const { jsPDF } = window.jspdf;
                 const doc = new jsPDF();
                 let yPosition = 22;
@@ -1024,7 +1037,7 @@
                 yPosition += 6;
                 doc.setFontSize(11);
                 doc.setTextColor(100);
-                const periodText = startDate && endDate ? `Período: ${startDate.toLocaleDateString()} a ${endDate.toLocaleDateString()}` : `Período: Hoje (${moment().format('DD/MM/YYYY')})`;
+                const periodText = `Período: ${moment(finalStartDate).format('DD/MM/YYYY')} a ${moment(finalEndDate).format('DD/MM/YYYY')}`;
                 doc.text(periodText, 14, yPosition);
                 yPosition += 12;
 
@@ -1037,9 +1050,8 @@
                 doc.text(splitTeamAnalysis, 14, yPosition);
                 yPosition += splitTeamAnalysis.length * 5 + 10;
                 
-                // Adicionar análises individuais
                 for (const userEmail in individualAnalyses) {
-                     if (yPosition > 250) { // Check for page break
+                     if (yPosition > 250) {
                         doc.addPage();
                         yPosition = 22;
                     }
@@ -1056,7 +1068,7 @@
                 doc.addPage();
                 doc.text("Log de Atividades Detalhado", 14, 22);
                 const tableColumn = ["Colaborador", "Tarefa", "Categoria", "Tempo Gasto", "Data"];
-                const tableRows = allEntries.map(entry => [
+                const tableRows = allEntries.sort((a,b) => b.endTime.seconds - a.endTime.seconds).map(entry => [
                     entry.userEmail,
                     entry.name,
                     entry.tag,
